@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мероприятия — Барный калькулятор</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<nav>
+    <a href="index.html">Главная</a>
+    <a href="recipes.html">Рецепты</a>
+    <a href="calculator.html">Калькулятор техкарт</a>
+    <a href="events.html" class="active">Мероприятия</a>
+    <a href="ingredients.html">Номенклатура</a>
+    <a href="converter.html">Конвертер</a>
+</nav>
+<main>
+    <h1>Мероприятия</h1>
+    <p class="subtitle">История мероприятий. Откройте карточку, чтобы собрать барную карту и посчитать закупку/заготовки, или скопируйте похожее прошедшее мероприятие как основу для нового.</p>
+
+    <div id="status" class="status"></div>
+
+    <div id="eventGrid" class="recipe-grid"></div>
+</main>
+
+<button class="fab" id="addEventBtn" title="Новое мероприятие">
+    <span class="fab-label">Новое мероприятие</span>
+    <span class="fab-icon">+</span>
+</button>
+
+<!-- Модалка создания мероприятия (и копирования) -->
+<div id="addOverlay" class="overlay hidden">
+    <div class="overlay-panel">
+        <div class="overlay-actions">
+            <button class="overlay-close" id="addCloseBtn">Закрыть</button>
+        </div>
+        <h3 id="addModalTitle" style="margin-top:0;">Новое мероприятие</h3>
+        <div class="form-grid">
+            <div class="form-field span-2">
+                <label>Название</label>
+                <input type="text" id="fName" placeholder="напр. Свадьба Ивановых">
+            </div>
+            <div class="form-field">
+                <label>Дата</label>
+                <input type="date" id="fDate">
+            </div>
+            <div class="form-field">
+                <label>Количество гостей</label>
+                <input type="text" id="fGuests" inputMode="numeric">
+            </div>
+            <div class="form-field">
+                <label>Плановый бюджет</label>
+                <input type="text" id="fBudget" inputMode="decimal">
+            </div>
+            <div class="form-field span-2">
+                <label>Комментарий</label>
+                <input type="text" id="fComment">
+            </div>
+        </div>
+        <button class="primary" id="fSaveBtn">Создать мероприятие</button>
+    </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/events.js"></script>
+</body>
+</html>

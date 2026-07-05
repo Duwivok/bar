@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мероприятие v2 - BARCALC.OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Unbounded:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles-v2.css">
+<link rel="stylesheet" href="css/event-v2.css">
+</head>
+<body class="bc-v2-page">
+<div class="bc-shell">
+    <aside class="bc-rail" aria-label="Навигация">
+        <a class="bc-logo" href="index.html">B</a>
+        <nav class="bc-nav">
+            <a href="index.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>
+                <span class="bc-nav-label">Главная</span>
+            </a>
+            <a href="recipes-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4.5 4h15L12.5 13v6.5h3M11.5 13v6.5h-3"/></svg>
+                <span class="bc-nav-label">Рецепты</span>
+            </a>
+            <a href="calculator-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7.5h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg>
+                <span class="bc-nav-label">Калькулятор</span>
+            </a>
+            <a href="events-v2.html" class="active">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3"/></svg>
+                <span class="bc-nav-label">События</span>
+            </a>
+            <a href="ingredients-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3.5 7 12 3.5 20.5 7 12 10.5 3.5 7Z"/><path d="M3.5 7v9.5L12 20.5l8.5-4V7"/><path d="M12 10.5v10"/></svg>
+                <span class="bc-nav-label">Сырье</span>
+            </a>
+            <a href="converter-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9.5 3h5M10.5 3v4.5L5.8 18a2 2 0 0 0 1.8 2.9h8.8a2 2 0 0 0 1.8-2.9L13.5 7.5V3"/><path d="M8 15h8"/></svg>
+                <span class="bc-nav-label">Единицы</span>
+            </a>
+        </nav>
+    </aside>
+    <main class="bc-window bc-window-single">
+        <section class="bc-list-pane bc-v2-content">
+            <div class="ev-header">
+                <div>
+                    <a class="ev-back" href="events-v2.html">← ко всем мероприятиям</a>
+                    <div class="bc-kicker">BARCALC.OS / МЕРОПРИЯТИЕ</div>
+                    <div class="ev-title-row">
+                        <h1 id="evName">Мероприятие</h1>
+                        <button type="button" class="ev-edit-btn" id="editEventBtn" title="Редактировать мероприятие" aria-label="Редактировать мероприятие">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4Z"/><path d="M14 5l3 3"/></svg>
+                        </button>
+                    </div>
+                    <div class="ev-meta" id="evMeta"></div>
+                </div>
+                <div class="ev-header-actions">
+                <span id="versionToggleSlot"></span>
+                <div id="recipePicker" class="bc-calc-picker ev-add-picker">
+                    <button id="recipePickerBtn" class="bc-primary-link" type="button" aria-haspopup="listbox" aria-expanded="false">+ добавить в меню</button>
+                    <div id="recipePickerPopup" class="bc-calc-picker-popup hidden">
+                        <input id="recipeSearchInput" class="bc-calc-picker-search" type="search" placeholder="поиск рецепта" autocomplete="off">
+                        <select id="recipePickerSpirit" class="bc-calc-picker-spirit" aria-label="основной алкоголь"></select>
+                        <div id="recipePickerFilters" class="bc-calc-picker-filters"></div>
+                        <div id="recipePickerSorts" class="bc-calc-picker-sorts"></div>
+                        <div id="recipePickerList" class="bc-calc-picker-list" role="listbox"></div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <div id="status" class="status bc-status"></div>
+
+            <div class="ev-summary" id="evSummary"></div>
+
+            <div class="ev-sticky" id="evSticky">
+                <div class="bc-segmented" id="evTabs">
+                    <span class="bc-segmented-thumb"></span>
+                </div>
+            </div>
+
+            <div class="ev-tab active" data-tab="menu">
+                <div class="ev-menu-toolbar">
+                    <input type="search" id="menuSearchInput" class="bc-search" placeholder="поиск по меню…" autocomplete="off">
+                    <div class="bc-chips" id="menuFilterChips"></div>
+                    <div class="bc-chips" id="menuSortChips"></div>
+                </div>
+                <div class="ev-table-head"><span>№</span><span>рецепт</span><span>порции</span><span>нужно</span></div>
+                <div id="evMenuList"></div>
+            </div>
+
+            <div class="ev-tab" data-tab="preps">
+                <div id="evPrepsList"></div>
+            </div>
+
+            <div class="ev-tab" data-tab="shopping">
+                <div class="ev-manual-form">
+                    <div class="form-grid">
+                        <div class="form-field"><label>Название позиции</label><input type="text" id="manualItemName" placeholder="напр. Лёд"></div>
+                        <div class="form-field"><label>Кол-во</label><input type="text" id="manualItemQty" inputMode="decimal" placeholder="напр. 5"></div>
+                        <div class="form-field"><label>Ед.</label><input type="text" id="manualItemUnit" list="unitOptionsList" placeholder="напр. кг"></div>
+                        <div class="form-field"><label>Категория</label><input type="text" id="manualItemCategory" list="categoryOptionsList" placeholder="напр. Прочее"></div>
+                        <div class="form-field"><label>Цена, ₽</label><input type="text" id="manualItemCost" inputMode="decimal" placeholder="напр. 300"></div>
+                    </div>
+                    <div class="ev-manual-actions">
+                        <button type="button" class="bc-primary-link" id="addManualItemBtn">+ добавить вручную</button>
+                        <button type="button" class="bc-button-link" id="copyShoppingListBtn">скопировать список</button>
+                    </div>
+                </div>
+                <div id="evShoppingList"></div>
+                <div class="ev-budget-total" id="evBudgetTotal"></div>
+            </div>
+
+            <div class="ev-tab" data-tab="issues">
+                <div id="evIssuesList"></div>
+            </div>
+        </section>
+        <div class="bc-marquee" aria-hidden="true">
+            <div class="bc-marquee-track">
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Карточка рецепта — та же выезжающая панель, что и на странице "Рецепты" (bc-drawer) -->
+<div id="detailDrawer" class="bc-drawer hidden">
+    <div class="bc-drawer-panel">
+        <div class="bc-drawer-actions">
+            <a id="drawerEditLink" class="bc-ghost-link bc-icon-btn" href="recipes.html" title="Редактировать" aria-label="Редактировать">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4Z"/><path d="M14 5l3 3"/></svg>
+            </a>
+            <button id="closeDrawerBtn" type="button" class="bc-icon-btn" title="Закрыть" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+        <div id="drawerBreadcrumbs" class="bc-breadcrumbs"></div>
+        <div id="drawerContent"></div>
+    </div>
+</div>
+
+<!-- Редактирование информации о мероприятии -->
+<div id="eventEditOverlay" class="ev-modal-overlay hidden">
+    <div class="ev-modal-box">
+        <div class="ev-modal-head">
+            <h3>Редактировать мероприятие</h3>
+            <button type="button" class="bc-icon-btn" id="eventEditCloseBtn" title="Закрыть" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+        <div class="form-grid">
+            <div class="form-field span-2"><label>Название</label><input id="editEvName" type="text"></div>
+            <div class="form-field"><label>Дата</label><input id="editEvDate" type="date"></div>
+            <div class="form-field"><label>Гостей</label><input id="editEvGuests" type="text" inputmode="numeric"></div>
+            <div class="form-field span-2"><label>Плановый бюджет, ₽</label><input id="editEvBudget" type="text" inputmode="decimal"></div>
+            <div class="form-field span-2"><label>Комментарий</label><input id="editEvComment" type="text"></div>
+        </div>
+        <button type="button" class="bc-primary-link ev-modal-submit" id="eventEditSaveBtn">Сохранить</button>
+    </div>
+</div>
+
+<!-- Подтверждение действия (напр. удаление позиции из меню) -->
+<div id="confirmOverlay" class="ev-modal-overlay hidden">
+    <div class="ev-modal-box">
+        <p id="confirmMessage"></p>
+        <div class="ev-modal-actions">
+            <button type="button" class="bc-button-link" id="confirmCancelBtn">Нет</button>
+            <button type="button" class="bc-primary-link" id="confirmOkBtn">Да</button>
+        </div>
+    </div>
+</div>
+
+<datalist id="unitOptionsList"></datalist>
+<datalist id="categoryOptionsList"></datalist>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/version-toggle.js"></script>
+<script src="js/constants.js"></script>
+<script src="js/format.js"></script>
+<script src="js/event-calc.js"></script>
+<script src="js/event-v2.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}
+</script>
+</body>
+</html>

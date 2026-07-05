@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Единицы v2 - BARCALC.OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Unbounded:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles-v2.css">
+</head>
+<body class="bc-v2-page">
+<div class="bc-shell">
+    <aside class="bc-rail" aria-label="Навигация"><a class="bc-logo" href="index.html">B</a><nav class="bc-nav"><a href="index.html"><span class="bc-nav-label">Главная</span></a><a href="recipes-v2.html"><span class="bc-nav-label">Рецепты</span></a><a href="calculator-v2.html"><span class="bc-nav-label">Калькулятор</span></a><a href="events-v2.html"><span class="bc-nav-label">События</span></a><a href="ingredients-v2.html"><span class="bc-nav-label">Сырье</span></a><a href="converter-v2.html" class="active"><span class="bc-nav-label">Единицы</span></a></nav></aside>
+    <main class="bc-window bc-window-single">
+        <section class="bc-list-pane bc-v2-content">
+            <header class="bc-header"><div><div class="bc-kicker">BARCALC.OS / UNITS</div><h1>Единицы</h1></div><button class="bc-primary-link" id="addRowBtn" type="button">+ конвертация</button></header>
+            <div id="status" class="status bc-status"></div>
+            <div class="toolbar bc-toolbar"><input type="text" id="searchInput" class="search-input bc-search" placeholder="Поиск по ингредиенту..."></div>
+            <div class="card bc-v2-card"><div class="conv-rows" id="conversionsBody"></div><div class="field-hint" id="emptyHint"></div></div>
+            <div class="card bulk-box bc-v2-card"><h3>Быстрый ввод пачкой</h3><textarea id="bulkInput" placeholder="Мята	веточка	2	примерная оценка"></textarea><div style="margin-top:10px;"><button class="primary" id="bulkImportBtn">Импортировать строки</button></div></div>
+            <h2>Выход продукта из сырья</h2>
+            <div class="toolbar"><button class="primary" id="addYieldRowBtn">+ выход из сырья</button></div>
+            <div class="card bc-v2-card"><div class="conv-rows" id="yieldBody"></div><div class="field-hint" id="yieldEmptyHint"></div></div>
+        </section>
+        <div class="bc-marquee" aria-hidden="true"><div class="bc-marquee-track"><span>UNITS</span><span>CONVERSION</span><span>YIELD</span><span>UNITS</span><span>CONVERSION</span><span>YIELD</span></div></div>
+    </main>
+</div>
+<datalist id="ingredientNamesList"></datalist>
+<datalist id="unitOptionsList"></datalist>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/version-toggle.js"></script>
+<script src="js/constants.js"></script>
+<script src="js/search-clear.js"></script>
+<script src="js/converter.js"></script>
+</body>
+</html>

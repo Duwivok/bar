@@ -1,0 +1,73 @@
+/* Стили только для events-v2.html (список мероприятий). Не подключается больше нигде. */
+
+#eventGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ev-list-row {
+    position: relative;
+    padding-right: 56px;
+}
+
+.ev-list-copy-btn {
+    position: absolute;
+    right: 16px;
+    bottom: 14px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--muted);
+    min-height: 0;
+}
+
+.ev-list-copy-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.ev-list-copy-btn:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+}
+
+/* Модалка "+ новое событие" / "скопировать в новое мероприятие" — та же разметка
+   (.overlay/.overlay-panel/.form-grid), что и на других страницах, но перекрашена
+   в тёмную v2-палитру вместо светлой v1-темы. Скоуп через #addOverlay, чтобы не
+   затронуть .overlay-panel на других страницах (ingredients-v2, converter-v2). */
+
+#addOverlay .overlay-panel {
+    background: #0d0a08;
+    color: var(--text);
+    border-left: 1px solid var(--line);
+}
+
+#addOverlay .overlay-close {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+}
+
+#addOverlay h3 {
+    font-family: "Unbounded", sans-serif;
+    color: var(--text);
+}
+
+#addOverlay label {
+    color: var(--muted);
+}
+
+#addOverlay input {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 10px;
+}

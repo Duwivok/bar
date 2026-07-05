@@ -1,0 +1,764 @@
+/* Стили только для страницы одного мероприятия (event-v2.html). Не подключается больше нигде. */
+
+/* .bc-list-pane — flex-колонка; без flex-shrink:0 эти блоки-"шапки" сжимались бы
+   до нуля высоты, когда список внутри активной вкладки длиннее экрана. */
+.ev-header,
+.ev-summary,
+.ev-sticky {
+    flex-shrink: 0;
+}
+
+.ev-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+    padding-right: 28px;
+    margin-bottom: 18px;
+}
+
+.ev-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ev-back {
+    display: inline-block;
+    margin-bottom: 10px;
+    color: var(--muted);
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.ev-back:hover {
+    color: var(--orange);
+}
+
+.ev-meta {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.ev-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ev-edit-btn {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--muted);
+    min-height: 0;
+}
+
+.ev-edit-btn svg {
+    width: 15px;
+    height: 15px;
+}
+
+.ev-edit-btn:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+}
+
+/* ---- Модалки (редактирование мероприятия, подтверждение действия) ---- */
+
+.ev-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(8, 6, 5, 0.72);
+    padding: 20px;
+}
+
+.ev-modal-overlay.hidden {
+    display: none;
+}
+
+.ev-modal-box {
+    width: min(420px, 100%);
+    padding: 22px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: #0d0a08;
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.5);
+}
+
+.ev-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.ev-modal-head h3 {
+    margin: 0;
+    font-family: "Unbounded", sans-serif;
+    font-size: 18px;
+    color: var(--text);
+}
+
+.ev-modal-box p {
+    margin: 0 0 18px;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.ev-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.ev-modal-box input {
+    width: 100%;
+    min-height: 38px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    padding: 8px 10px;
+}
+
+.ev-modal-submit {
+    width: 100%;
+    margin-top: 14px;
+}
+
+/* ---- Тулбар поиска/фильтров/сортировки внутри уже собранного меню ---- */
+
+.ev-menu-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 0 28px 14px 0;
+}
+
+.ev-menu-toolbar .bc-search {
+    flex: 1 1 200px;
+    min-width: 0;
+}
+
+.ev-menu-toolbar .bc-chips {
+    margin: 0;
+}
+
+/* ---- Сводка: одна тонкая полоса вместо пяти крупных карточек ---- */
+
+.ev-summary {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 28px 20px 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.02);
+    overflow: hidden;
+}
+
+.ev-stat {
+    flex: 1 1 0;
+    min-width: 130px;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 10px;
+    border-right: 1px solid var(--line-soft);
+    white-space: nowrap;
+}
+
+.ev-stat:last-child {
+    border-right: 0;
+}
+
+.ev-stat b {
+    font-family: "Unbounded", sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.ev-stat span {
+    color: var(--muted);
+    text-transform: uppercase;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+}
+
+/* ---- Вкладки: липнут к верху при скролле и сжимаются ---- */
+
+.ev-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 12;
+    background: var(--bg);
+    padding-top: 2px;
+    margin: 0 28px 20px 0;
+    transition: padding 0.2s ease;
+}
+
+.ev-sticky .bc-segmented {
+    margin: 0 auto;
+    max-width: 480px;
+}
+
+.ev-sticky.compact {
+    padding-bottom: 2px;
+}
+
+.ev-sticky.compact .bc-segmented {
+    max-width: 320px;
+}
+
+.ev-sticky.compact .bc-segmented button {
+    min-height: 24px;
+    padding: 0 6px;
+    font-size: 10px;
+}
+
+.ev-tab {
+    display: none;
+    min-height: 0;
+}
+
+.ev-tab.active {
+    display: block;
+}
+
+.ev-table-head,
+.ev-row {
+    display: grid;
+    grid-template-columns: 40px minmax(180px, 1fr) 170px 130px 36px;
+    gap: 16px;
+    align-items: center;
+    padding-right: 28px;
+}
+
+.ev-table-head {
+    height: 34px;
+    color: var(--muted-2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 11px;
+    border-bottom: 1px solid var(--line);
+}
+
+.ev-row {
+    min-height: 62px;
+    border-top: 1px solid var(--line-soft);
+}
+
+.ev-row-index {
+    color: var(--muted-2);
+    font-size: 12px;
+}
+
+.ev-row-name strong {
+    display: block;
+    font-size: 14px;
+}
+
+.ev-row-name span {
+    display: block;
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.ev-stepper {
+    display: grid;
+    grid-template-columns: 34px 1fr 34px;
+    height: 36px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    overflow: hidden;
+}
+
+.ev-stepper button {
+    min-height: 0;
+    border: 0;
+    border-right: 1px solid var(--line);
+    border-radius: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: 16px;
+    padding: 0;
+}
+
+.ev-stepper button:last-child {
+    border-right: 0;
+    border-left: 1px solid var(--line);
+}
+
+.ev-stepper input {
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    text-align: center;
+    font-size: 14px;
+    padding: 0;
+    min-height: 0;
+    border-radius: 0;
+}
+
+.ev-needed {
+    text-align: right;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.ev-needed b {
+    display: block;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-bottom: 2px;
+}
+
+/* ---- Общие "чек"-контролы (заменяют нативные чекбоксы) и тумблер ---- */
+
+.ev-check {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    color: transparent;
+    min-height: 0;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.ev-check svg {
+    width: 13px;
+    height: 13px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ev-check:hover {
+    border-color: var(--orange);
+}
+
+.ev-check.checked {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: #090807;
+}
+
+.ev-check.disabled {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.ev-switch {
+    position: relative;
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 34px;
+    height: 20px;
+}
+
+.ev-switch input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+}
+
+.ev-switch-slider {
+    position: absolute;
+    inset: 0;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.ev-switch-slider::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.ev-switch input:checked + .ev-switch-slider {
+    background: rgba(255, 103, 43, 0.18);
+    border-color: var(--orange);
+}
+
+.ev-switch input:checked + .ev-switch-slider::before {
+    transform: translateX(14px);
+    background: var(--orange);
+}
+
+/* ---- Вкладка "Закупка": каждая категория — отдельная карточка ---- */
+
+.ev-category-group {
+    margin: 0 28px 14px 0;
+    padding: 6px 18px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.ev-category-group h4 {
+    margin: 10px 0 4px;
+    color: var(--muted-2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.ev-check-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 13px;
+    transition: opacity 0.25s ease;
+}
+
+.ev-check-row:last-of-type {
+    border-bottom: 0;
+}
+
+.ev-check-row.checked {
+    opacity: 0.45;
+}
+
+.ev-check-row.checked .ev-check-name {
+    text-decoration: line-through;
+}
+
+.ev-check-name {
+    flex: 1;
+    min-width: 0;
+    color: var(--text);
+}
+
+.ev-check-qty {
+    flex: 0 0 auto;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.ev-check-cost {
+    flex: 0 0 auto;
+    min-width: 80px;
+    text-align: right;
+    color: var(--text);
+    font-weight: 700;
+}
+
+.ev-pack-line {
+    margin: -4px 0 10px 34px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.ev-pack-line.warn,
+.ev-pack-line.warn a {
+    color: var(--orange);
+}
+
+.ev-pack-line a {
+    color: var(--orange);
+}
+
+.ev-manual-form {
+    margin: 0 28px 18px 0;
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.ev-manual-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.ev-budget-total {
+    margin: 0 28px 20px 0;
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: #0d0a08;
+    text-align: right;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--orange);
+}
+
+.ev-budget-total.over {
+    color: var(--red);
+}
+
+/* ---- Вкладка "Заготовки" ---- */
+
+.ev-prep-card {
+    margin: 0 28px 10px 0;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.03);
+    transition: opacity 0.3s ease, transform 0.3s ease, border-color 0.15s ease;
+}
+
+.ev-prep-card:hover {
+    border-color: rgba(255, 103, 43, 0.4);
+}
+
+.ev-prep-card.checked {
+    opacity: 0.5;
+}
+
+.ev-prep-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ev-prep-title {
+    position: relative;
+    display: inline-block;
+    flex: 1;
+    min-width: 0;
+    font-weight: 700;
+    color: var(--text);
+    transition: color 0.25s ease;
+}
+
+.ev-prep-title::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    height: 1px;
+    width: 0;
+    background: currentColor;
+    transition: width 0.35s ease;
+}
+
+.ev-prep-card.checked .ev-prep-title {
+    color: var(--muted);
+}
+
+.ev-prep-card.checked .ev-prep-title::after {
+    width: 100%;
+}
+
+.ev-prep-qty {
+    flex: 0 0 auto;
+    color: var(--muted);
+    font-size: 13px;
+    text-align: right;
+}
+
+.ev-prep-qty.warn a,
+.ev-prep-hint a {
+    color: var(--orange);
+}
+
+.ev-prep-hint {
+    margin: 8px 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.ev-switch-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-soft);
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.ev-prep-body {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line-soft);
+    display: grid;
+    gap: 10px;
+}
+
+.ev-prep-body .form-field input {
+    max-width: 160px;
+}
+
+.ev-expand-toggle {
+    justify-self: start;
+    border: 0;
+    background: transparent;
+    color: var(--orange);
+    padding: 0;
+    min-height: 0;
+    font-size: 12px;
+}
+
+/* ---- Вкладка "Проблемы" ---- */
+
+.ev-issue-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin: 0 28px 0 0;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 13px;
+    color: var(--text);
+}
+
+.ev-issue-row a {
+    flex: 0 0 auto;
+    color: var(--orange);
+    white-space: nowrap;
+}
+
+.ev-add-picker {
+    position: relative;
+}
+
+.ev-add-picker .bc-calc-picker-popup {
+    left: auto;
+    right: 0;
+    width: min(360px, 86vw);
+}
+
+@media (max-width: 1080px) {
+    /* На мобильном страница должна скроллиться целиком через window/body — но
+       .bc-v2-content{overflow:auto} (styles-v2.css) переопределяет мобильный
+       .bc-list-pane{overflow:visible} и превращает этот блок в собственный
+       скролл-контейнер. Из-за этого position:sticky у .ev-sticky "прилипает"
+       к нему, а не к реально скроллящемуся окну, и визуально не работает. */
+    .bc-v2-content {
+        overflow: visible;
+    }
+
+    .ev-header {
+        flex-direction: column;
+        padding-right: 0;
+    }
+
+    /* На мобильном глазок-переключатель версии должен быть в правом верхнем углу
+       экрана, а не встроен в поток шапки (там он "докнут" через versionToggleSlot
+       для десктопа/для соответствия странице "Рецепты"). */
+    #versionToggleBtn.docked {
+        position: fixed;
+        top: 14px;
+        right: 14px;
+        z-index: 20;
+    }
+
+    /* Кнопка "+ добавить рецепт" на мобильном переносится JS-ом (setupAddPickerPlacement)
+       внутрь вкладки "Меню" — там она должна быть широкой кнопкой, а не пилюлей в шапке. */
+    .ev-tab .ev-add-picker {
+        margin: 0 0 16px;
+    }
+
+    .ev-tab .ev-add-picker #recipePickerBtn {
+        width: 100%;
+    }
+
+    .ev-tab .ev-add-picker .bc-calc-picker-popup {
+        left: 0;
+        right: 0;
+        width: auto;
+    }
+
+    .ev-summary,
+    .ev-sticky {
+        margin-right: 0;
+    }
+
+    .ev-stat {
+        min-width: 45%;
+        border-bottom: 1px solid var(--line-soft);
+    }
+
+    .ev-table-head {
+        display: none;
+    }
+
+    .ev-row {
+        grid-template-columns: 1fr auto auto;
+        grid-template-areas: "name needed del" "stepper stepper stepper";
+        padding-right: 0;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        margin-bottom: 10px;
+        padding: 12px 14px;
+        min-height: 0;
+    }
+
+    .ev-row-index {
+        display: none;
+    }
+
+    .ev-row-name {
+        grid-area: name;
+    }
+
+    .ev-needed {
+        grid-area: needed;
+    }
+
+    .ev-row > .bc-icon-btn {
+        grid-area: del;
+    }
+
+    .ev-stepper {
+        grid-area: stepper;
+        margin-top: 10px;
+    }
+
+    .ev-category-group,
+    .ev-manual-form,
+    .ev-budget-total,
+    .ev-prep-card,
+    .ev-issue-row {
+        margin-right: 0;
+    }
+}

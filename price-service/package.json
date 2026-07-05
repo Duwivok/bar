@@ -1,0 +1,13 @@
+{
+  "name": "bar-price-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check src/normalize.js && node --check src/compare.js && node --check src/price-service.js && node --check src/fetchers/index.js && node --check src/fetchers/manual-fetcher.js && node --check src/fetchers/mock-fetcher.js && node --check src/fetchers/generic-html-fetcher.js && node --check src/fetchers/stub-fetcher.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

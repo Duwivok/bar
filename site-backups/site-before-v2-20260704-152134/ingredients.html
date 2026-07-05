@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Номенклатура — Барный калькулятор</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<nav>
+    <a href="index.html">Главная</a>
+    <a href="recipes.html">Рецепты</a>
+    <a href="calculator.html">Калькулятор техкарт</a>
+    <a href="events.html">Мероприятия</a>
+    <a href="ingredients.html" class="active">Номенклатура</a>
+    <a href="converter.html">Конвертер</a>
+</nav>
+<main>
+    <h1>Номенклатура</h1>
+    <p class="subtitle">Позиции сюда попадают автоматически, как только вы упомянете их в рецепте или техкарте — сами их заводить не нужно. Здесь дозаполняете категорию и варианты упаковки (у одной позиции их может быть несколько — например водка 0,5 / 0,7 / 1,0 л по разным ценам) для закупки.</p>
+
+    <div id="status" class="status"></div>
+
+    <div class="toolbar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Поиск по названию...">
+        <select id="sortSelect">
+            <option value="name">Сортировка: по названию</option>
+            <option value="category">Сортировка: по категории</option>
+            <option value="price">Сортировка: по цене упаковки</option>
+        </select>
+        <button id="checkPricesBtn">Проверить цены</button>
+        <button class="primary" id="addRowBtn">+ Добавить позицию</button>
+    </div>
+
+    <div class="filters-row" id="filtersRow"></div>
+    <div id="priceCheckPanel" class="price-check-panel hidden"></div>
+
+    <div class="card section-card">
+        <div class="section-header" data-target="sectionNewBody">
+            <span class="section-toggle">▾</span>
+            <h3>Новые позиции <span class="section-count" id="countNew">0</span></h3>
+        </div>
+        <div class="section-body" id="sectionNewBody">
+            <div class="table-wrap">
+                <table class="ingredients-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Название</th>
+                            <th>Категория</th>
+                            <th>Базовая ед.</th>
+                            <th>Упаковки</th>
+                            <th>Конвертация</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyNew"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card section-card">
+        <div class="section-header" data-target="sectionIncompleteBody">
+            <span class="section-toggle">▾</span>
+            <h3>Недозаполненные позиции <span class="section-count" id="countIncomplete">0</span></h3>
+        </div>
+        <div class="section-body" id="sectionIncompleteBody">
+            <div class="table-wrap">
+                <table class="ingredients-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Название</th>
+                            <th>Категория</th>
+                            <th>Базовая ед.</th>
+                            <th>Упаковки</th>
+                            <th>Конвертация</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyIncomplete"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card section-card">
+        <div class="section-header" data-target="sectionOkBody">
+            <span class="section-toggle">▾</span>
+            <h3>Корректные позиции <span class="section-count" id="countOk">0</span></h3>
+        </div>
+        <div class="section-body" id="sectionOkBody">
+            <div class="table-wrap">
+                <table class="ingredients-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Название</th>
+                            <th>Категория</th>
+                            <th>Базовая ед.</th>
+                            <th>Упаковки</th>
+                            <th>Конвертация</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyOk"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bulk-box">
+        <h3 style="margin-top:0;">Быстрый ввод пачкой</h3>
+        <p class="subtitle" style="margin-bottom:8px;">
+            Одна строка = один вариант упаковки, поля через Tab —
+            Название, Категория, Базовая ед., Закупочная ед., Размер упаковки, Цена упаковки, Ссылка, Комментарий.
+            Если у позиции несколько вариантов упаковки — повторите название на нескольких строках подряд
+            (Категорию/Базовую ед./Комментарий достаточно указать один раз, в первой строке). Лишние поля
+            в конце строки можно не указывать.
+        </p>
+        <textarea id="bulkInput" placeholder="Водка	Алкоголь	мл	бутылка	500	600&#10;Водка					бутылка	700	800&#10;Водка					бутылка	1000	1100"></textarea>
+        <div style="margin-top:10px;">
+            <button class="primary" id="bulkImportBtn">Импортировать строки</button>
+        </div>
+    </div>
+
+    <div class="card" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button id="exportExcelBtn">⬇ Скачать Excel</button>
+        <button id="importExcelBtn">⬆ Загрузить Excel</button>
+        <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display:none;">
+        <span class="field-hint">Выгружается по одной строке на каждый вариант упаковки. Не трогайте колонки ID и «ID упаковки» у существующих строк — по ним система понимает, что это правка конкретной позиции/варианта, а не новые. Новый вариант — допишите строку с тем же названием и пустыми ID/«ID упаковки»; новую позицию — строку с пустым ID.</span>
+    </div>
+</main>
+
+<datalist id="categoryOptionsList"></datalist>
+<datalist id="baseUnitOptionsList"></datalist>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/constants.js"></script>
+<script src="js/search-clear.js"></script>
+<script src="js/multiselect.js"></script>
+<script src="js/ingredients.js"></script>
+</body>
+</html>

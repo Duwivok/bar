@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Калькулятор техкарт — Барный калькулятор</title>
+<link rel="stylesheet" href="css/styles.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Барный калькулятор">
+</head>
+<body>
+<nav>
+    <a href="index.html">Главная</a>
+    <a href="recipes.html">Рецепты</a>
+    <a href="calculator.html" class="active">Калькулятор техкарт</a>
+    <a href="events.html">Мероприятия</a>
+    <a href="ingredients.html">Номенклатура</a>
+    <a href="converter.html">Конвертер</a>
+</nav>
+<main>
+    <h1>Калькулятор техкарт</h1>
+    <p class="subtitle">Выберите рецепт или заготовку, задайте нужный объём/количество порций — калькулятор пересчитает состав и (для заготовок) время приготовления.</p>
+
+    <div id="status" class="status"></div>
+
+    <div class="toolbar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Поиск по названию...">
+        <div class="segmented" id="typeSegmented">
+            <button type="button" data-mode="all" class="active">Все</button>
+            <button type="button" data-mode="cocktail">Коктейли</button>
+            <button type="button" data-mode="prep">Заготовки</button>
+        </div>
+    </div>
+
+    <div class="filters-row" id="filtersRow"></div>
+
+    <div id="recipeGrid" class="recipe-grid"></div>
+
+</main>
+
+<!-- Оверлей расчёта — открывается поверх списка рецептов после выбора карточки -->
+<div id="calcPanel" class="overlay hidden">
+    <div class="overlay-panel">
+        <div class="overlay-actions">
+            <button class="overlay-close" id="calcCloseBtn">Закрыть</button>
+        </div>
+        <h3 id="calcRecipeName" style="margin:6px 0 2px;"></h3>
+        <div class="detail-subtype" id="calcRecipeMeta"></div>
+
+        <div class="calc-input-row">
+            <div class="form-field" id="calcInputField">
+                <label id="calcInputLabel">Количество порций</label>
+                <input type="text" id="calcInputValue" inputMode="decimal" placeholder="1">
+            </div>
+            <label class="calc-toggle">
+                <input type="checkbox" id="calcExpandToggle">
+                <span>Раскрыть вложенные заготовки</span>
+            </label>
+            <button class="primary" id="calcRunBtn">Рассчитать</button>
+        </div>
+
+        <div id="calcResult"></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/version-toggle.js"></script>
+<script src="js/constants.js"></script>
+<script src="js/search-clear.js"></script>
+<script src="js/multiselect.js"></script>
+<script src="js/format.js"></script>
+<script src="js/calculator.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}
+</script>
+</body>
+</html>

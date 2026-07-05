@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Конвертер единиц — Барный калькулятор</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<nav>
+    <a href="index.html">Главная</a>
+    <a href="recipes.html">Рецепты</a>
+    <a href="calculator.html">Калькулятор техкарт</a>
+    <a href="events.html">Мероприятия</a>
+    <a href="ingredients.html">Номенклатура</a>
+    <a href="converter.html" class="active">Конвертер</a>
+</nav>
+<main>
+    <h1>Конвертер единиц</h1>
+    <p class="subtitle">Некоторые позиции удобно указывать в рецепте штуками/веточками/листьями — так проще готовить по карточке. Но для расчёта закупки на мероприятии нужен пересчёт в базовую единицу ингредиента (мл/г/кг). Здесь задаёте коэффициент: сколько базовой единицы в одной штуке/веточке/листе — калькулятор мероприятия сам подставит его при подсчёте сырья и сметы.</p>
+
+    <div id="status" class="status"></div>
+
+    <div class="toolbar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Поиск по ингредиенту...">
+        <button class="primary" id="addRowBtn">+ Добавить конвертацию</button>
+    </div>
+
+    <div class="card">
+        <div class="table-wrap">
+            <table class="ingredients-table">
+                <thead>
+                    <tr>
+                        <th>Ингредиент</th>
+                        <th>Базовая ед.</th>
+                        <th>Единица рецепта</th>
+                        <th>Коэффициент</th>
+                        <th>Формула</th>
+                        <th>Комментарий</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="conversionsBody"></tbody>
+            </table>
+        </div>
+        <div class="field-hint" id="emptyHint" style="padding:10px;"></div>
+    </div>
+
+    <div class="card bulk-box">
+        <h3 style="margin-top:0;">Быстрый ввод пачкой</h3>
+        <p class="subtitle" style="margin-bottom:8px;">
+            Одна строка = одна конвертация, поля через Tab — Ингредиент, Единица рецепта, Коэффициент, Комментарий.
+            Ингредиент должен уже существовать в Номенклатуре.
+        </p>
+        <textarea id="bulkInput" placeholder="Мята	веточка	2	примерная оценка&#10;Лимон	шт	40	зависит от размера"></textarea>
+        <div style="margin-top:10px;">
+            <button class="primary" id="bulkImportBtn">Импортировать строки</button>
+        </div>
+    </div>
+</main>
+
+<datalist id="ingredientNamesList"></datalist>
+<datalist id="unitOptionsList"></datalist>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/constants.js"></script>
+<script src="js/search-clear.js"></script>
+<script src="js/converter.js"></script>
+</body>
+</html>

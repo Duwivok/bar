@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Конвертер единиц — Барный калькулятор</title>
+<link rel="stylesheet" href="css/styles.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Барный калькулятор">
+</head>
+<body>
+<nav>
+    <a href="index.html">Главная</a>
+    <a href="recipes.html">Рецепты</a>
+    <a href="calculator.html">Калькулятор техкарт</a>
+    <a href="events.html">Мероприятия</a>
+    <a href="ingredients.html">Номенклатура</a>
+    <a href="converter.html" class="active">Конвертер</a>
+</nav>
+<main>
+    <h1>Конвертер единиц</h1>
+    <p class="subtitle">Некоторые позиции удобно указывать в рецепте штуками/веточками/листьями — так проще готовить по карточке. Но для расчёта закупки на мероприятии нужен пересчёт в базовую единицу ингредиента (мл/г/кг). Здесь задаёте коэффициент: сколько базовой единицы в одной штуке/веточке/листе — калькулятор мероприятия сам подставит его при подсчёте сырья и сметы.</p>
+
+    <div id="status" class="status"></div>
+
+    <div class="toolbar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Поиск по ингредиенту...">
+        <button class="primary" id="addRowBtn">+ Добавить конвертацию</button>
+    </div>
+
+    <div class="card">
+        <div class="conv-rows" id="conversionsBody"></div>
+        <div class="field-hint" id="emptyHint"></div>
+    </div>
+
+    <div class="card bulk-box">
+        <h3 style="margin-top:0;">Быстрый ввод пачкой</h3>
+        <p class="subtitle" style="margin-bottom:8px;">
+            Одна строка = одна конвертация, поля через Tab — Ингредиент, Единица рецепта, Коэффициент, Комментарий.
+            Ингредиент должен уже существовать в Номенклатуре.
+        </p>
+        <textarea id="bulkInput" placeholder="Мята	веточка	2	примерная оценка&#10;Лимон	шт	40	зависит от размера"></textarea>
+        <div style="margin-top:10px;">
+            <button class="primary" id="bulkImportBtn">Импортировать строки</button>
+        </div>
+    </div>
+
+    <h2 style="margin-top:32px;">Выход продукта из сырья</h2>
+    <p class="subtitle">Другой случай: цедра или пил лимона — это не единица измерения лимона, а отдельный продукт с своим выходом (например, из 1 лимона получается 5 г цедры). Купить можно только сырьё (лимон) — здесь задаёте, из какого сырья и в каком количестве получается продукт. Под капотом это создаёт/редактирует заготовку в «Рецептах» с составом из одного сырья — в карточках коктейлей используйте готовый продукт как обычный ингредиент, а калькулятор мероприятия сам развернёт его обратно в сырьё при расчёте закупки.</p>
+
+    <div class="toolbar">
+        <button class="primary" id="addYieldRowBtn">+ Добавить выход из сырья</button>
+    </div>
+
+    <div class="card">
+        <div class="conv-rows" id="yieldBody"></div>
+        <div class="field-hint" id="yieldEmptyHint"></div>
+    </div>
+</main>
+
+<datalist id="ingredientNamesList"></datalist>
+<datalist id="unitOptionsList"></datalist>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/version-toggle.js"></script>
+<script src="js/constants.js"></script>
+<script src="js/search-clear.js"></script>
+<script src="js/converter.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Калькулятор v2 - BARCALC.OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Unbounded:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles-v2.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0908">
+</head>
+<body class="bc-v2-page">
+<div class="bc-shell">
+    <aside class="bc-rail" aria-label="Навигация">
+        <a class="bc-logo" href="index.html">B</a>
+        <nav class="bc-nav">
+            <a href="index.html"><svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg><span class="bc-nav-label">Главная</span></a>
+            <a href="recipes-v2.html"><svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4.5 4h15L12.5 13v6.5h3M11.5 13v6.5h-3"/></svg><span class="bc-nav-label">Рецепты</span></a>
+            <a href="calculator-v2.html" class="active"><svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7.5h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg><span class="bc-nav-label">Калькулятор</span></a>
+            <a href="events-v2.html"><svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3"/></svg><span class="bc-nav-label">События</span></a>
+            <a href="ingredients-v2.html"><svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3.5 7 12 3.5 20.5 7 12 10.5 3.5 7Z"/><path d="M3.5 7v9.5L12 20.5l8.5-4V7"/><path d="M12 10.5v10"/></svg><span class="bc-nav-label">Сырье</span></a>
+            <a href="converter-v2.html"><svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9.5 3h5M10.5 3v4.5L5.8 18a2 2 0 0 0 1.8 2.9h8.8a2 2 0 0 0 1.8-2.9L13.5 7.5V3"/><path d="M8 15h8"/></svg><span class="bc-nav-label">Единицы</span></a>
+        </nav>
+    </aside>
+
+    <main class="bc-window bc-calc-window">
+        <section class="bc-calc-workspace">
+            <header class="bc-calc-head">
+                <div>
+                    <div class="bc-kicker">BARCALC.OS / CALC</div>
+                    <h1>Калькулятор</h1>
+                </div>
+                <div id="status" class="bc-status"></div>
+                <span id="versionToggleSlot"></span>
+            </header>
+
+            <div class="bc-calc-sticky" id="calcSticky">
+                <div class="bc-calc-controls">
+                    <div id="recipePicker" class="bc-calc-picker">
+                        <button id="recipePickerBtn" class="bc-calc-picker-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+                            <span>выберите рецепт</span>
+                        </button>
+                        <div id="recipePickerPopup" class="bc-calc-picker-popup hidden">
+                            <input id="recipeSearchInput" class="bc-calc-picker-search" type="search" placeholder="поиск рецепта" autocomplete="off">
+                            <select id="recipePickerSpirit" class="bc-calc-picker-spirit" aria-label="основной алкоголь"></select>
+                            <div id="recipePickerFilters" class="bc-calc-picker-filters"></div>
+                            <div id="recipePickerSorts" class="bc-calc-picker-sorts"></div>
+                            <div id="recipePickerList" class="bc-calc-picker-list" role="listbox"></div>
+                        </div>
+                    </div>
+                    <span class="bc-calc-on">на</span>
+                    <input id="targetInput" class="bc-calc-target" type="text" inputmode="decimal" value="1">
+                    <span id="targetUnitLabel" class="bc-calc-unit-label">порций</span>
+                </div>
+
+                <div class="bc-calc-presets" id="presetBar"></div>
+            </div>
+
+            <div class="bc-calc-table">
+                <div class="bc-calc-table-head">
+                    <span>сырье</span>
+                    <span>на 1 порцию</span>
+                    <span>на цель</span>
+                    <span class="bc-calc-tree-actions">
+                        <button id="expandAllPrepsBtn" type="button">развернуть</button>
+                        <button id="collapseAllPrepsBtn" type="button">свернуть</button>
+                    </span>
+                </div>
+                <div id="calcRows" class="bc-calc-rows"></div>
+            </div>
+        </section>
+
+        <aside class="bc-calc-summary">
+            <div class="bc-kicker">Итог</div>
+            <div id="summaryRows" class="bc-calc-summary-rows"></div>
+            <div id="prepSummary" class="bc-calc-prep-summary"></div>
+            <button id="copyShoppingBtn" class="bc-calc-main-action" type="button">скопировать закупку →</button>
+            <a id="editRecipeLink" class="bc-calc-secondary-action" href="recipes-v2.html">редактировать рецепт</a>
+        </aside>
+
+        <div class="bc-marquee" aria-hidden="true">
+            <div class="bc-marquee-track">
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/version-toggle.js"></script>
+<script src="js/format.js"></script>
+<script src="js/calculator-v2.js"></script>
+</body>
+</html>

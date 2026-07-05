@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Рецепты — Барный калькулятор</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<nav>
+    <a href="index.html">Главная</a>
+    <a href="recipes.html" class="active">Рецепты</a>
+    <a href="calculator.html">Калькулятор техкарт</a>
+    <a href="events.html">Мероприятия</a>
+    <a href="ingredients.html">Номенклатура</a>
+    <a href="converter.html">Конвертер</a>
+</nav>
+<main>
+    <h1>Рецепты</h1>
+    <p class="subtitle">Коктейли, шоты, настойки и заготовки. Нажмите на карточку, чтобы увидеть подробности.</p>
+
+    <div id="status" class="status"></div>
+
+    <div class="toolbar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Поиск по названию...">
+        <div class="segmented" id="typeSegmented">
+            <button type="button" data-mode="all" class="active">Все</button>
+            <button type="button" data-mode="cocktail">Коктейли</button>
+            <button type="button" data-mode="prep">Заготовки</button>
+        </div>
+    </div>
+
+    <div class="filters-row" id="filtersRow"></div>
+
+    <div id="recipeGrid" class="recipe-grid"></div>
+</main>
+
+<button class="fab" id="addRecipeBtn" title="Добавить рецепт(-ы)">
+    <span class="fab-label">Добавить новый рецепт</span>
+    <span class="fab-icon">+</span>
+</button>
+
+<!-- Детальная оверлей-панель -->
+<div id="detailOverlay" class="overlay hidden">
+    <div class="overlay-panel">
+        <div class="overlay-actions">
+            <button id="detailEditBtn">✎ Редактировать</button>
+            <button class="overlay-close" id="detailCloseBtn">Закрыть</button>
+        </div>
+        <div class="breadcrumbs" id="breadcrumbs"></div>
+        <div id="detailContent"></div>
+    </div>
+</div>
+
+<!-- Модалка добавления рецепта -->
+<div id="addOverlay" class="overlay hidden">
+    <div class="overlay-panel">
+        <div class="overlay-actions">
+            <button class="overlay-close" id="addCloseBtn">Закрыть</button>
+        </div>
+        <h3 style="margin-top:0;">Добавить рецепт</h3>
+        <div class="modal-tabs">
+            <button type="button" id="tabFormBtn" class="active">Форма</button>
+            <button type="button" id="tabBulkBtn">Текстом</button>
+        </div>
+
+        <div id="tabForm">
+            <div class="form-grid">
+                <div class="form-field span-2">
+                    <label>Название</label>
+                    <input type="text" id="fName">
+                </div>
+                <div class="form-field">
+                    <label>Это заготовка?</label>
+                    <select id="fIsPrep">
+                        <option value="false">Нет — коктейль/шот/настойка</option>
+                        <option value="true">Да — заготовка</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Подтип</label>
+                    <select id="fSubtype"></select>
+                </div>
+                <div class="form-field span-2">
+                    <label>Основной алкоголь</label>
+                    <select id="fMainSpirit">
+                        <option value="">—</option>
+                    </select>
+                    <div class="field-hint">Список берётся из номенклатуры, категория «Алкоголь» — дозаполните её на странице Номенклатура, если тут пусто.</div>
+                </div>
+            </div>
+
+            <div class="form-grid" id="prepFieldsRow" style="display:none;">
+                <div class="form-field">
+                    <label>Выход партии — количество</label>
+                    <input type="text" id="fYieldQty" inputMode="decimal" placeholder="напр. 1000">
+                </div>
+                <div class="form-field">
+                    <label>Выход партии — единица</label>
+                    <input type="text" id="fYieldUnit" list="unitOptionsList" placeholder="мл">
+                </div>
+                <div class="form-field">
+                    <label>Трудоёмкость приготовления, мин</label>
+                    <input type="text" id="fLaborMinutes" inputMode="decimal" placeholder="напр. 20">
+                </div>
+                <div class="form-field span-2">
+                    <div class="field-hint">Сколько получается за одно приготовление (напр. 1000 мл) и сколько минут это занимает. Нужно для «Калькулятора техкарт» и расчёта на мероприятие — без выхода партии эти калькуляторы не смогут пересчитать объём заготовки.</div>
+                </div>
+            </div>
+
+            <div class="form-grid" id="purchaseFieldsRow" style="display:none;">
+                <div class="form-field span-2">
+                    <div class="field-hint" style="margin-top:0;">Можно купить готовым вместо приготовления — заполните, если у этой заготовки есть покупной аналог. На каждом мероприятии отдельно решаете, готовить самим или купить (на вкладке «Список заготовок»).</div>
+                </div>
+                <div class="form-field">
+                    <label>Закупочная единица</label>
+                    <input type="text" id="fPurchaseUnit" placeholder="напр. банка">
+                </div>
+                <div class="form-field">
+                    <label>Размер упаковки</label>
+                    <input type="text" id="fPurchasePackageSize" inputMode="decimal" placeholder="напр. 1000">
+                </div>
+                <div class="form-field">
+                    <label>Цена упаковки</label>
+                    <input type="text" id="fPurchasePackagePrice" inputMode="decimal" placeholder="напр. 450">
+                </div>
+                <div class="form-field">
+                    <label>Категория для списка покупок</label>
+                    <input type="text" id="fPurchaseCategory" list="categoryOptionsList" placeholder="напр. Фрукты/Ягоды">
+                </div>
+                <div class="form-field span-2">
+                    <label>Ссылка на поставщика</label>
+                    <input type="text" id="fPurchaseLink">
+                </div>
+            </div>
+
+            <div class="form-field span-2">
+                <label>Краткий состав</label>
+                <div class="table-wrap">
+                    <table id="fItemsTable">
+                        <thead>
+                            <tr>
+                                <th>Сырьё / заготовка</th>
+                                <th>Кол-во</th>
+                                <th>Ед.</th>
+                                <th>Топом</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="fItemsBody"></tbody>
+                    </table>
+                </div>
+                <button type="button" class="primary" id="fAddItemBtn" style="margin-top:8px;">+ Ингредиент</button>
+            </div>
+
+            <div class="form-grid" style="margin-top:14px;">
+                <div class="form-field span-2">
+                    <label>Описание приготовления</label>
+                    <textarea id="fDescription" rows="3"></textarea>
+                </div>
+                <div class="form-field span-2">
+                    <label>Заметки/рекомендации</label>
+                    <textarea id="fNotes" rows="2"></textarea>
+                </div>
+                <div class="form-field">
+                    <label>Картинка — ссылка</label>
+                    <input type="text" id="fImageUrl" placeholder="https://...">
+                </div>
+                <div class="form-field">
+                    <label>Картинка — файл с устройства</label>
+                    <input type="file" id="fImageFile" accept="image/*">
+                </div>
+                <div class="form-field">
+                    <label>Ссылка на источник</label>
+                    <input type="text" id="fSourceUrl">
+                </div>
+                <div class="form-field span-2">
+                    <label>Тэги (через запятую)</label>
+                    <input type="text" id="fTags" placeholder="сухой, кислый, крепкий">
+                </div>
+            </div>
+
+            <div class="sticky-save-bar">
+                <button class="primary" id="fSaveBtn">Сохранить рецепт</button>
+            </div>
+        </div>
+
+        <div id="tabBulk" style="display:none;">
+            <p class="subtitle" style="margin-bottom:8px;">
+                По одной строке на ингредиент, поля через Tab. Нажмите «Скопировать шаблон» — там формат подробно расписан построчно, шаблон можно отдать нейросети, чтобы она сама разложила ваш текст рецепта по колонкам.
+            </p>
+            <div style="margin-bottom:10px;">
+                <button type="button" id="copyTemplateBtn">Скопировать шаблон</button>
+            </div>
+            <textarea id="bulkInput" style="min-height:140px;font-family:ui-monospace,Consolas,monospace;font-size:13px;" placeholder="Вставьте сюда строки по шаблону"></textarea>
+            <div style="margin-top:10px;">
+                <button class="primary" id="bulkImportBtn">Проверить строки</button>
+            </div>
+            <div id="bulkPreview" class="bulk-preview hidden"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Универсальный попап: ошибки/предупреждения/подтверждения -->
+<div id="genericModal" class="modal-overlay hidden">
+    <div class="modal-box">
+        <button class="modal-close-big" id="modalCloseBtn">×</button>
+        <h3 id="modalTitle"></h3>
+        <p id="modalMessage"></p>
+        <div class="modal-buttons" id="modalButtons"></div>
+    </div>
+</div>
+
+<datalist id="ingredientOrPrepList"></datalist>
+<datalist id="unitOptionsList"></datalist>
+<datalist id="categoryOptionsList"></datalist>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/constants.js"></script>
+<script src="js/search-clear.js"></script>
+<script src="js/multiselect.js"></script>
+<script src="js/recipe-detail.js"></script>
+<script src="js/recipes.js"></script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мероприятие — Барный калькулятор</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<nav>
+    <a href="index.html">Главная</a>
+    <a href="recipes.html">Рецепты</a>
+    <a href="calculator.html">Калькулятор техкарт</a>
+    <a href="events.html" class="active">Мероприятия</a>
+    <a href="ingredients.html">Номенклатура</a>
+    <a href="converter.html">Конвертер</a>
+</nav>
+<main>
+    <div class="event-header">
+        <div>
+            <h1 id="eventName">Мероприятие</h1>
+            <p class="event-meta" id="eventMeta"></p>
+        </div>
+        <a href="events.html" class="button" style="text-decoration:none;padding:7px 14px;border:1px solid #cbd5e1;border-radius:8px;color:#0f172a;font-size:14px;">← Ко всем мероприятиям</a>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div class="segmented" id="tabSegmented" style="margin-bottom:18px;">
+        <button type="button" data-tab="calc" class="active">Калькулятор мероприятия</button>
+        <button type="button" data-tab="shopping">Список покупок</button>
+        <button type="button" data-tab="preps">Список заготовок</button>
+        <button type="button" data-tab="menu">Барная карта</button>
+    </div>
+
+    <!-- Калькулятор мероприятия -->
+    <section id="tabCalc" class="event-tabpanel">
+        <div class="card">
+            <h3 style="margin-top:0;">Барная карта мероприятия</h3>
+            <p class="field-hint" style="margin-bottom:10px;">Выберите коктейли и укажите количество порций — калькулятор пересчитает нужное сырьё и заготовки.</p>
+            <div class="picker-row">
+                <input type="text" id="cocktailSearch" class="search-input" placeholder="Найти коктейль по названию...">
+            </div>
+            <div class="filters-row" id="filtersRow"></div>
+            <div id="cocktailResults" class="picker-list" style="margin-bottom:16px;"></div>
+
+            <div class="section-header" data-target="menuItemsBody">
+                <span class="section-toggle" id="menuItemsToggle">▾</span>
+                <h3>В барной карте <span class="section-count" id="menuItemsCount">0</span></h3>
+            </div>
+            <div class="section-body" id="menuItemsBody">
+                <div id="menuItemsList"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0;">Сводный расчёт</h3>
+            <div id="calcSummary"></div>
+        </div>
+    </section>
+
+    <!-- Список покупок -->
+    <section id="tabShopping" class="event-tabpanel hidden">
+        <div class="card">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+                <button type="button" id="copyShoppingListBtn">📋 Скопировать список</button>
+            </div>
+            <div id="shoppingList"></div>
+            <div id="budgetTotal" class="budget-total"></div>
+        </div>
+    </section>
+
+    <!-- Список заготовок -->
+    <section id="tabPreps" class="event-tabpanel hidden">
+        <div class="card">
+            <div id="prepsList"></div>
+        </div>
+    </section>
+
+    <!-- Барная карта мероприятия (заглушка) -->
+    <section id="tabMenu" class="event-tabpanel hidden">
+        <div class="card">
+            <h3 style="margin-top:0;">Барная карта мероприятия</h3>
+            <p class="empty-state">В разработке — здесь появится красивое меню для гостей (PDF/фото) на основе выбранных коктейлей.</p>
+        </div>
+    </section>
+</main>
+
+<!-- Детальная оверлей-панель рецепта (без кнопки редактирования — редактирование только на странице "Рецепты") -->
+<div id="detailOverlay" class="overlay hidden">
+    <div class="overlay-panel">
+        <div class="overlay-actions">
+            <button class="overlay-close" id="detailCloseBtn">Закрыть</button>
+        </div>
+        <div class="breadcrumbs" id="breadcrumbs"></div>
+        <div id="detailContent"></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/constants.js"></script>
+<script src="js/multiselect.js"></script>
+<script src="js/recipe-detail.js"></script>
+<script src="js/format.js"></script>
+<script src="js/event-calc.js"></script>
+<script src="js/event.js"></script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Барный калькулятор</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<nav>
+    <a href="index.html" class="active">Главная</a>
+    <a href="recipes.html">Рецепты</a>
+    <a href="calculator.html">Калькулятор техкарт</a>
+    <a href="events.html">Мероприятия</a>
+    <a href="ingredients.html">Номенклатура</a>
+    <a href="converter.html">Конвертер</a>
+</nav>
+<main>
+    <h1>Барный калькулятор</h1>
+    <p class="subtitle">Рецепты, техкарты, сборка барной карты и закупка для мероприятий.</p>
+
+    <img src="images/home-banner.jpg" alt="Два пузыря на троих" class="home-banner">
+
+    <div id="dbStatus" class="status"></div>
+
+    <div class="card">
+        <h3 style="margin-top:0;">Что умеет утилита</h3>
+        <ul>
+            <li><strong>Рецепты</strong> — база коктейлей, шотов и заготовок с составом, приготовлением, фото и тэгами</li>
+            <li><strong>Калькулятор техкарт</strong> — пересчёт граммовок заготовки под нужный объём</li>
+            <li><strong>Мероприятия</strong> — барная карта под конкретное событие, на основе истории прошлых</li>
+            <li><strong>Номенклатура</strong> — сырьё, варианты упаковки и цены для закупки</li>
+        </ul>
+        <h3>Сейчас в базе</h3>
+        <ul id="statsList">
+            <li>Загрузка...</li>
+        </ul>
+    </div>
+</main>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script>
+    const statusEl = document.getElementById('dbStatus');
+    const statsList = document.getElementById('statsList');
+
+    if (!isDbConfigured()) {
+        showStatus(statusEl, 'База данных ещё не подключена — впишите SUPABASE_URL и SUPABASE_ANON_KEY в js/supabase-client.js', 'error');
+        statsList.innerHTML = '<li>—</li>';
+    } else {
+        Promise.all([
+            db.from('recipes').select('id', { count: 'exact', head: true }).eq('is_prep', false),
+            db.from('recipes').select('id', { count: 'exact', head: true }).eq('is_prep', true),
+            db.from('ingredients').select('id', { count: 'exact', head: true }),
+        ]).then(([cocktailsRes, prepsRes, ingredientsRes]) => {
+            const err = cocktailsRes.error || prepsRes.error || ingredientsRes.error;
+            if (err) {
+                showStatus(statusEl, 'Не получилось подключиться к базе: ' + err.message, 'error');
+                statsList.innerHTML = '<li>—</li>';
+                return;
+            }
+            showStatus(statusEl, 'База подключена', 'info');
+            statsList.innerHTML = `
+                <li>${cocktailsRes.count} коктейлей и шотов</li>
+                <li>${prepsRes.count} заготовок</li>
+                <li>${ingredientsRes.count} позиций в номенклатуре</li>
+            `;
+        });
+    }
+</script>
+</body>
+</html>

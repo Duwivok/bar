@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Сырье v2 - BARCALC.OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Unbounded:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles-v2.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0908">
+</head>
+<body class="bc-v2-page">
+<div class="bc-shell">
+    <aside class="bc-rail" aria-label="Навигация">
+        <a class="bc-logo" href="index.html">B</a>
+        <nav class="bc-nav">
+            <a href="index.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>
+                <span class="bc-nav-label">Главная</span>
+            </a>
+            <a href="recipes-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4.5 4h15L12.5 13v6.5h3M11.5 13v6.5h-3"/></svg>
+                <span class="bc-nav-label">Рецепты</span>
+            </a>
+            <a href="calculator-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7.5h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg>
+                <span class="bc-nav-label">Калькулятор</span>
+            </a>
+            <a href="events-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3"/></svg>
+                <span class="bc-nav-label">События</span>
+            </a>
+            <a href="ingredients-v2.html" class="active">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3.5 7 12 3.5 20.5 7 12 10.5 3.5 7Z"/><path d="M3.5 7v9.5L12 20.5l8.5-4V7"/><path d="M12 10.5v10"/></svg>
+                <span class="bc-nav-label">Сырье</span>
+            </a>
+            <a href="converter-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9.5 3h5M10.5 3v4.5L5.8 18a2 2 0 0 0 1.8 2.9h8.8a2 2 0 0 0 1.8-2.9L13.5 7.5V3"/><path d="M8 15h8"/></svg>
+                <span class="bc-nav-label">Единицы</span>
+            </a>
+        </nav>
+    </aside>
+
+    <main class="bc-window">
+        <section class="bc-list-pane">
+            <header class="bc-header">
+                <div>
+                    <div class="bc-kicker">BARCALC.OS / INGREDIENTS</div>
+                    <h1>Сырье <span id="ingredientCount">8</span></h1>
+                </div>
+                <div class="bc-header-actions">
+                    <span id="versionToggleSlot"></span>
+                    <button id="toolsBtn" type="button">инструменты</button>
+                    <button class="bc-primary-link" id="addRowBtn" type="button">+ позиция</button>
+                </div>
+            </header>
+
+            <div id="status" class="bc-status"></div>
+
+            <div class="bc-recipes-sticky" id="ingredientsSticky">
+                <div class="bc-segmented" id="statusTabs">
+                    <span class="bc-segmented-thumb"></span>
+                    <button type="button" data-status="all" class="active">все</button>
+                    <button type="button" data-status="new">новые</button>
+                    <button type="button" data-status="incomplete">неполные</button>
+                    <button type="button" data-status="ok">ок</button>
+                </div>
+
+                <div class="bc-toolbar">
+                    <div id="categoryFilter" class="bc-filter"></div>
+                    <div id="sortFilter" class="bc-filter"></div>
+                    <div id="eventFilter" class="bc-filter"></div>
+                    <input id="searchInput" class="bc-search" type="search" placeholder="поиск...">
+                </div>
+            </div>
+
+            <div id="ingredientList" class="bc-recipe-list ing-list"></div>
+        </section>
+
+        <aside class="bc-detail-pane" id="detailPane"></aside>
+
+        <div class="bc-marquee" aria-hidden="true">
+            <div class="bc-marquee-track">
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div id="detailDrawer" class="bc-drawer hidden">
+    <div class="bc-drawer-panel">
+        <div class="bc-drawer-actions">
+            <button id="drawerEditBtn" type="button" class="bc-icon-btn" title="Изменить" aria-label="Изменить">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4Z"/><path d="M14 5l3 3"/></svg>
+            </button>
+            <button id="drawerDeleteBtn" type="button" class="bc-icon-btn ing-danger" title="Удалить позицию" aria-label="Удалить позицию">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 7h14M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg>
+            </button>
+            <button id="closeDrawerBtn" type="button" class="bc-icon-btn" title="Закрыть" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+        <div id="drawerContent"></div>
+    </div>
+</div>
+
+<div id="ingredientFormDrawer" class="bc-drawer hidden">
+    <div class="bc-drawer-panel bc-form-panel">
+        <div class="bc-drawer-actions">
+            <div>
+                <div class="bc-kicker">BARCALC.OS / INGREDIENTS</div>
+                <h3 id="ingredientFormTitle" class="bc-form-title">Новая позиция</h3>
+            </div>
+            <button id="ingredientFormCloseBtn" type="button" class="bc-icon-btn" title="Закрыть" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+
+        <div id="ingredientFormStatus" class="bc-status"></div>
+
+        <div class="bc-form-scroll">
+            <section class="bc-form-section">
+                <div class="bc-section-title">Основное</div>
+                <div class="bc-field">
+                    <label for="ifName">Название</label>
+                    <input type="text" id="ifName">
+                </div>
+                <div class="bc-field-row">
+                    <div class="bc-field">
+                        <label for="ifCategory">Категория</label>
+                        <input type="text" id="ifCategory" list="categoryOptionsList">
+                    </div>
+                    <div class="bc-field">
+                        <label for="ifBaseUnit">Базовая ед.</label>
+                        <input type="text" id="ifBaseUnit" list="baseUnitOptionsList">
+                    </div>
+                </div>
+                <div class="bc-field">
+                    <label for="ifComment">Комментарий</label>
+                    <input type="text" id="ifComment" placeholder="необязательно">
+                </div>
+            </section>
+
+            <section class="bc-form-section">
+                <div class="bc-section-title">Варианты упаковки</div>
+                <div class="bc-field-hint">Размер указывайте в базовой единице этой позиции — напр. бутылка 0.5 л при базовой единице «мл» это 500, а не 0.5.</div>
+                <div id="ifPackages" class="bc-form-items"></div>
+                <button type="button" class="bc-ghost-link" id="ifAddPackageBtn">+ вариант упаковки</button>
+            </section>
+        </div>
+
+        <div class="bc-form-footer">
+            <button type="button" class="bc-primary-link bc-form-save" id="ifSaveBtn">Сохранить позицию</button>
+        </div>
+    </div>
+</div>
+
+<div id="toolsOverlay" class="bc-drawer hidden">
+    <div class="bc-drawer-panel bc-form-panel">
+        <div class="bc-drawer-actions">
+            <h3 class="bc-form-title" style="margin-right:auto;">Инструменты</h3>
+            <button id="closeToolsBtn" type="button" class="bc-icon-btn" title="Закрыть" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+
+        <div class="bc-form-scroll">
+            <div class="bc-v2-card">
+                <h4>Проверить все цены</h4>
+                <p class="field-hint">Пройтись по всем позициям с включённой автоценой и сравнить с источником.</p>
+                <button type="button" class="primary bc-form-save" id="checkAllPricesBtn">проверить все цены</button>
+                <div id="priceCheckPanel" class="price-check-panel hidden"></div>
+            </div>
+
+            <div class="bc-v2-card">
+                <h4>Быстрый ввод пачкой</h4>
+                <p class="field-hint">Один вариант упаковки — одна строка, поля через Tab: Название, Категория, Базовая ед., Закупочная ед., Размер, Цена, Ссылка, Комментарий.</p>
+                <textarea id="bulkInput" rows="6" placeholder="Водка	Алкоголь	мл	бутылка	500	890"></textarea>
+                <button type="button" class="primary bc-form-save" id="bulkImportBtn">импортировать строки</button>
+            </div>
+
+            <div class="bc-v2-card">
+                <h4>Excel</h4>
+                <p class="field-hint">Выгрузка/загрузка номенклатуры и вариантов упаковки одной таблицей.</p>
+                <div class="bc-field-row">
+                    <button type="button" id="exportExcelBtn">скачать Excel</button>
+                    <button type="button" id="importExcelBtn">загрузить Excel</button>
+                </div>
+                <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display:none;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<datalist id="categoryOptionsList"></datalist>
+<datalist id="baseUnitOptionsList"></datalist>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/version-toggle.js"></script>
+<script src="js/constants.js?v=price-sources-7"></script>
+<script src="js/ingredients-v2.js?v=10"></script>
+</body>
+</html>

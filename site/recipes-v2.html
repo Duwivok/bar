@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Рецепты v2 - BARCALC.OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Unbounded:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles-v2.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Барный калькулятор">
+</head>
+<body>
+<div class="bc-shell">
+    <aside class="bc-rail" aria-label="Навигация">
+        <a class="bc-logo" href="index.html">B</a>
+        <nav class="bc-nav">
+            <a href="index.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>
+                <span class="bc-nav-label">Главная</span>
+            </a>
+            <a href="recipes-v2.html" class="active">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4.5 4h15L12.5 13v6.5h3M11.5 13v6.5h-3"/></svg>
+                <span class="bc-nav-label">Рецепты</span>
+            </a>
+            <a href="calculator-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7.5h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg>
+                <span class="bc-nav-label">Калькулятор</span>
+            </a>
+            <a href="events-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3"/></svg>
+                <span class="bc-nav-label">События</span>
+            </a>
+            <a href="ingredients-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3.5 7 12 3.5 20.5 7 12 10.5 3.5 7Z"/><path d="M3.5 7v9.5L12 20.5l8.5-4V7"/><path d="M12 10.5v10"/></svg>
+                <span class="bc-nav-label">Сырье</span>
+            </a>
+            <a href="converter-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9.5 3h5M10.5 3v4.5L5.8 18a2 2 0 0 0 1.8 2.9h8.8a2 2 0 0 0 1.8-2.9L13.5 7.5V3"/><path d="M8 15h8"/></svg>
+                <span class="bc-nav-label">Единицы</span>
+            </a>
+        </nav>
+    </aside>
+
+    <main class="bc-window">
+        <section class="bc-list-pane">
+            <header class="bc-header">
+                <div>
+                    <div class="bc-kicker">BARCALC.OS / RECIPES</div>
+                    <h1>Рецепты <span id="recipeCount">0</span></h1>
+                </div>
+                <div class="bc-recipes-header-actions">
+                    <span id="versionToggleSlot"></span>
+                    <button type="button" class="bc-primary-link" id="newRecipeBtn">+ новый рецепт</button>
+                </div>
+            </header>
+
+            <div id="status" class="bc-status"></div>
+
+            <div class="bc-recipes-sticky" id="recipesSticky">
+                <div class="bc-segmented" id="modeTabs">
+                    <span class="bc-segmented-thumb"></span>
+                    <button type="button" data-mode="all" class="active">все</button>
+                    <button type="button" data-mode="cocktail">коктейли</button>
+                    <button type="button" data-mode="shot">шоты</button>
+                    <button type="button" data-mode="prep">заготовки</button>
+                </div>
+
+                <div class="bc-toolbar">
+                    <div id="subtypeFilter" class="bc-filter"></div>
+                    <div id="tagFilter" class="bc-filter"></div>
+                    <div id="ingredientFilter" class="bc-filter"></div>
+                    <input id="searchInput" class="bc-search" type="search" placeholder="найти рецепт по названию...">
+                </div>
+            </div>
+
+            <div id="recipeList" class="bc-recipe-list"></div>
+        </section>
+
+        <aside class="bc-detail-pane">
+            <div id="previewBreadcrumbs" class="bc-preview-breadcrumbs"></div>
+            <div class="bc-detail-top">
+                <div>
+                    <div id="previewType" class="bc-kicker">выберите рецепт</div>
+                    <h2 id="previewTitle">карточка будет здесь</h2>
+                </div>
+                <div id="previewImage" class="bc-preview-image">нет фото</div>
+            </div>
+
+            <div id="previewMeta" class="bc-meta"></div>
+
+            <div class="bc-section-title">Ингредиенты</div>
+            <div id="previewItems" class="bc-items"></div>
+
+            <div class="bc-quick" id="previewQuick"></div>
+
+            <a id="calcRecipeLink" class="bc-calc-link disabled" href="calculator-v2.html">рассчитать количество →</a>
+            <div class="bc-detail-actions">
+                <button id="openDetailBtn" type="button" disabled>подробнее</button>
+                <a id="editRecipeLink" class="bc-button-link disabled" href="recipes.html">редактировать</a>
+            </div>
+        </aside>
+
+        <div class="bc-marquee" aria-hidden="true">
+            <div class="bc-marquee-track">
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div id="detailDrawer" class="bc-drawer hidden">
+    <div class="bc-drawer-panel">
+        <div class="bc-drawer-actions">
+            <a id="drawerEditLink" class="bc-ghost-link bc-icon-btn" href="recipes.html" title="Редактировать" aria-label="Редактировать">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4Z"/><path d="M14 5l3 3"/></svg>
+            </a>
+            <button id="closeDrawerBtn" type="button" class="bc-icon-btn" title="Закрыть" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+        <div id="drawerBreadcrumbs" class="bc-breadcrumbs"></div>
+        <div id="drawerContent"></div>
+    </div>
+</div>
+
+<div id="recipeFormDrawer" class="bc-drawer hidden">
+    <div class="bc-drawer-panel bc-form-panel">
+        <div class="bc-drawer-actions">
+            <div>
+                <div class="bc-kicker">BARCALC.OS / RECIPES</div>
+                <h3 id="recipeFormTitle" class="bc-form-title">Новый рецепт</h3>
+            </div>
+            <button id="recipeFormCloseBtn" type="button" class="bc-icon-btn" title="Закрыть" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+
+        <div id="recipeFormStatus" class="bc-status"></div>
+
+        <div class="bc-segmented bc-form-tabs" id="recipeFormTabs">
+            <span class="bc-segmented-thumb"></span>
+            <button type="button" data-tab="form" class="active">форма</button>
+            <button type="button" data-tab="bulk">текстом</button>
+        </div>
+
+        <div class="bc-form-scroll" id="rfFormTab">
+            <section class="bc-form-section">
+                <div class="bc-section-title">Основное</div>
+                <div class="bc-field">
+                    <label for="rfName">Название</label>
+                    <input type="text" id="rfName">
+                </div>
+
+                <div class="bc-field">
+                    <label>Тип</label>
+                    <div class="bc-segmented bc-form-segmented" id="rfIsPrepSegmented">
+                        <span class="bc-segmented-thumb"></span>
+                        <button type="button" data-value="false" class="active">коктейль / шот</button>
+                        <button type="button" data-value="true">заготовка</button>
+                    </div>
+                    <select id="rfIsPrep" hidden>
+                        <option value="false">Коктейль / шот</option>
+                        <option value="true">Заготовка</option>
+                    </select>
+                </div>
+
+                <div class="bc-field-row">
+                    <div class="bc-field">
+                        <label for="rfSubtype">Подтип</label>
+                        <select id="rfSubtype"></select>
+                    </div>
+                    <div class="bc-field">
+                        <label for="rfMainSpirit">Основной алкоголь</label>
+                        <select id="rfMainSpirit"><option value="">—</option></select>
+                    </div>
+                </div>
+                <div class="bc-field-hint">Список алкоголя — из номенклатуры, категория «Алкоголь». Дополните на странице «Сырьё», если тут нет нужной позиции.</div>
+
+                <div class="bc-field-row" id="rfPrepFields" style="display:none;">
+                    <div class="bc-field">
+                        <label for="rfYieldQty">Выход партии</label>
+                        <input type="text" id="rfYieldQty" inputmode="decimal" placeholder="напр. 1000">
+                    </div>
+                    <div class="bc-field">
+                        <label for="rfYieldUnit">Единица</label>
+                        <input type="text" id="rfYieldUnit" list="rfUnitList" placeholder="мл">
+                    </div>
+                    <div class="bc-field">
+                        <label for="rfLaborMinutes">Готовится, мин</label>
+                        <input type="text" id="rfLaborMinutes" inputmode="decimal" placeholder="напр. 20">
+                    </div>
+                </div>
+
+                <details class="bc-form-collapsible" id="rfPurchaseDetails" style="display:none;">
+                    <summary>Можно купить готовым (необязательно)</summary>
+                    <div class="bc-field-row">
+                        <div class="bc-field">
+                            <label for="rfPurchaseUnit">Закупочная единица</label>
+                            <input type="text" id="rfPurchaseUnit" placeholder="напр. банка">
+                        </div>
+                        <div class="bc-field">
+                            <label for="rfPurchasePackageSize">Размер упаковки</label>
+                            <input type="text" id="rfPurchasePackageSize" inputmode="decimal" placeholder="напр. 1000">
+                        </div>
+                        <div class="bc-field">
+                            <label for="rfPurchasePackagePrice">Цена упаковки</label>
+                            <input type="text" id="rfPurchasePackagePrice" inputmode="decimal" placeholder="напр. 450">
+                        </div>
+                    </div>
+                    <div class="bc-field-row">
+                        <div class="bc-field">
+                            <label for="rfPurchaseCategory">Категория закупки</label>
+                            <input type="text" id="rfPurchaseCategory" list="rfCategoryList" placeholder="напр. Фрукты/Ягоды">
+                        </div>
+                        <div class="bc-field">
+                            <label for="rfPurchaseLink">Ссылка на поставщика</label>
+                            <input type="text" id="rfPurchaseLink">
+                        </div>
+                    </div>
+                </details>
+            </section>
+
+            <section class="bc-form-section">
+                <div class="bc-section-title">Состав</div>
+                <div id="rfItems" class="bc-form-items"></div>
+                <button type="button" class="bc-ghost-link" id="rfAddItemBtn">+ ингредиент</button>
+            </section>
+
+            <section class="bc-form-section">
+                <div class="bc-section-title">Приготовление</div>
+                <div class="bc-field">
+                    <label for="rfDescription">Инструкция</label>
+                    <textarea id="rfDescription" rows="3"></textarea>
+                </div>
+                <div class="bc-field">
+                    <label for="rfNotes">Заметки / рекомендации</label>
+                    <textarea id="rfNotes" rows="2"></textarea>
+                </div>
+            </section>
+
+            <section class="bc-form-section">
+                <div class="bc-section-title">Медиа и теги</div>
+                <div class="bc-field-row bc-field-grid-2">
+                    <div class="bc-field">
+                        <label for="rfImageUrl">Картинка — ссылка</label>
+                        <input type="text" id="rfImageUrl" placeholder="https://...">
+                    </div>
+                    <div class="bc-field">
+                        <label for="rfImageFile">Картинка — файл</label>
+                        <input type="file" id="rfImageFile" accept="image/*">
+                    </div>
+                    <div class="bc-field">
+                        <label for="rfSourceUrl">Ссылка на источник</label>
+                        <input type="text" id="rfSourceUrl">
+                    </div>
+                    <div class="bc-field">
+                        <label for="rfTags">Теги (через запятую)</label>
+                        <input type="text" id="rfTags" placeholder="сухой, кислый, крепкий">
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="bc-form-scroll hidden" id="rfBulkTab">
+            <section class="bc-form-section">
+                <div class="bc-field-hint">
+                    По одной строке на ингредиент, поля через Tab. Нажмите «Скопировать шаблон» — там формат подробно расписан построчно, шаблон можно отдать нейросети, чтобы она сама разложила ваш текст рецепта по колонкам.
+                </div>
+                <button type="button" class="bc-ghost-link" id="rfCopyTemplateBtn">Скопировать шаблон</button>
+                <div class="bc-field">
+                    <textarea id="rfBulkInput" rows="8" class="bc-mono-textarea" placeholder="Вставьте сюда строки по шаблону"></textarea>
+                </div>
+                <button type="button" class="bc-primary-link" id="rfBulkCheckBtn">Проверить строки</button>
+            </section>
+
+            <div id="rfBulkPreview" class="bc-bulk-preview hidden"></div>
+        </div>
+
+        <div class="bc-form-footer">
+            <button type="button" class="bc-primary-link bc-form-save" id="rfSaveBtn">Сохранить рецепт</button>
+        </div>
+    </div>
+</div>
+
+<datalist id="rfIngredientList"></datalist>
+<datalist id="rfUnitList"></datalist>
+<datalist id="rfCategoryList"></datalist>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/version-toggle.js"></script>
+<script src="js/format.js"></script>
+<script src="js/constants.js"></script>
+<script src="js/recipes-v2.js"></script>
+<script src="js/recipe-form-v2.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}
+</script>
+</body>
+</html>
