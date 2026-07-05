@@ -2314,10 +2314,37 @@ th {
     box-shadow: 0 22px 60px rgba(0, 0, 0, 0.52);
 }
 
+.bc-calc-picker-search-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
 .bc-calc-picker-search {
     min-height: 38px;
-    margin-bottom: 8px;
+    margin-bottom: 0;
     outline: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.bc-calc-picker-close {
+    flex: 0 0 auto;
+    width: 38px;
+    min-height: 38px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--muted);
+    font-size: 20px;
+    line-height: 1;
+}
+
+.bc-calc-picker-close:hover {
+    border-color: var(--orange);
+    color: var(--orange);
 }
 
 .bc-calc-picker-spirit {
@@ -2331,6 +2358,20 @@ th {
     color: var(--text);
 }
 
+.bc-calc-picker-popup .bc-custom-select {
+    margin-bottom: 8px;
+}
+
+.bc-calc-picker-popup .bc-custom-select .bc-calc-picker-spirit {
+    margin-bottom: 0;
+}
+
+.bc-calc-picker-popup .bc-custom-select-trigger {
+    min-height: 36px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
 .bc-calc-picker-list {
     display: grid;
     gap: 4px;
@@ -2340,20 +2381,15 @@ th {
     scrollbar-gutter: stable;
 }
 
-.bc-calc-picker-filters,
 .bc-calc-picker-sorts {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     margin-bottom: 8px;
-}
-
-.bc-calc-picker-sorts {
     padding-bottom: 8px;
     border-bottom: 1px solid var(--line-soft);
 }
 
-.bc-calc-picker-filters button,
 .bc-calc-picker-sorts button {
     min-height: 28px;
     padding: 0 9px;
@@ -2362,14 +2398,13 @@ th {
     font-size: 11px;
 }
 
-.bc-calc-picker-filters button.active,
 .bc-calc-picker-sorts button.active,
-.bc-calc-picker-filters button:hover,
 .bc-calc-picker-sorts button:hover {
     border-color: var(--orange);
     color: var(--orange);
     background: rgba(255, 103, 43, 0.08);
 }
+
 
 .bc-calc-picker-option {
     display: grid;
@@ -2648,6 +2683,14 @@ th {
     cursor: pointer;
 }
 
+.bc-calc-tree-note {
+    padding: 6px 0 6px calc(var(--level) * 22px + 20px);
+    border-bottom: 1px solid var(--line-soft);
+    color: var(--muted-2);
+    font-size: 11px;
+    font-style: italic;
+}
+
 .bc-calc-row.is-topup .bc-calc-share {
     display: flex;
     justify-content: flex-end;
@@ -2879,7 +2922,19 @@ th {
     }
 
     .bc-calc-head {
+        position: relative;
         margin-bottom: 18px;
+    }
+
+    .bc-calc-head #versionToggleSlot {
+        position: absolute;
+        top: 2px;
+        right: 0;
+    }
+
+    .bc-calc-head h1 {
+        font-size: 29px;
+        max-width: calc(100% - 56px);
     }
 
     .bc-calc-controls {
@@ -3123,6 +3178,67 @@ th {
     margin-top: 8px;
 }
 
+/* Карточка варианта упаковки: сверху номер + сумма + кнопка проверки цены,
+   ниже — подписанные строки "ключ слева / значение справа" (закупочная ед., источник). */
+.ing-pkg-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line-soft);
+}
+
+.ing-pkg-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ing-pkg-header .bc-index {
+    flex: 0 0 auto;
+}
+
+.ing-pkg-main {
+    flex: 1;
+    min-width: 0;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.ing-pkg-check {
+    flex: 0 0 auto;
+}
+
+.ing-pkg-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding-left: 34px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.ing-pkg-row b {
+    color: var(--text);
+    font-weight: 500;
+    text-align: right;
+}
+
+/* Комментарий и другие длинные значения в bc-meta — не прижимаем к правому краю
+   построчно (нечитаемо), а переносим значение под подпись, слева. */
+#detailPane .bc-meta > div,
+#drawerContent .bc-meta > div {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+}
+
+#detailPane .bc-meta > div b,
+#drawerContent .bc-meta > div b {
+    text-align: left;
+    font-weight: 600;
+}
+
 /* .bc-detail-top у «Рецептов» — грид на 2 колонки, вторая (86px) под фото рецепта.
    У сырья фото нет, но колонка всё равно резервировалась и отъедала ширину у
    заголовка с иконками изменить/удалить — из-за этого они кривовато вставали
@@ -3130,6 +3246,12 @@ th {
 #detailPane .bc-detail-top,
 #drawerContent .bc-detail-top {
     grid-template-columns: minmax(0, 1fr);
+}
+
+/* Категория/ед. теперь идут под заголовком, а не над ним — нужен небольшой отступ сверху. */
+#detailPane .bc-detail-top .bc-kicker,
+#drawerContent .bc-detail-top .bc-kicker {
+    margin-top: 6px;
 }
 
 /* Форма позиции переиспользует .bc-field/.bc-field-row/.bc-form-* из формы рецепта —
@@ -3522,5 +3644,37 @@ th {
     #ingredientsSticky:not(.compact) .bc-toolbar .bc-filter,
     #ingredientsSticky:not(.compact) .bc-toolbar .bc-search {
         grid-column: auto;
+    }
+
+    /* На мобильном поиск изначально — просто круглая кнопка-лупа (без подписи),
+       по тапу/фокусу разворачивается в поле ввода и раздвигает фильтры в сторону.
+       На десктопе поиск остаётся обычным полем. */
+    #ingredientsSticky:not(.compact) .bc-toolbar .bc-search {
+        flex: 0 0 auto;
+        width: 36px;
+        min-width: 36px;
+        padding: 0;
+        border-radius: 999px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2382776d' stroke-width='1.8'%3E%3Ccircle cx='10' cy='10' r='6'/%3E%3Cpath d='M20 20l-5-5'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: center;
+        color: transparent;
+        transition: width 0.2s ease, padding 0.2s ease;
+    }
+
+    #ingredientsSticky:not(.compact) .bc-toolbar .bc-search::placeholder {
+        color: transparent;
+    }
+
+    #ingredientsSticky:not(.compact) .bc-toolbar .bc-search:focus {
+        flex: 1 1 auto;
+        width: auto;
+        padding: 0 14px;
+        background-image: none;
+        color: var(--text);
+    }
+
+    #ingredientsSticky:not(.compact) .bc-toolbar .bc-search:focus::placeholder {
+        color: var(--muted-2);
     }
 }

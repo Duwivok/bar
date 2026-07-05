@@ -25,6 +25,7 @@ const els = {
     recipePickerBtn: document.getElementById("recipePickerBtn"),
     recipePickerPopup: document.getElementById("recipePickerPopup"),
     recipeSearchInput: document.getElementById("recipeSearchInput"),
+    recipePickerCloseBtn: document.getElementById("recipePickerCloseBtn"),
     recipePickerSpirit: document.getElementById("recipePickerSpirit"),
     recipePickerFilters: document.getElementById("recipePickerFilters"),
     recipePickerSorts: document.getElementById("recipePickerSorts"),
@@ -47,6 +48,70 @@ function setStatus(message) {
     els.status.textContent = message || "";
     els.status.classList.toggle("show", !!message);
 }
+
+// Кастомный выпадающий список поверх обычного <select> — только для десктопа.
+// На мобильном (iPhone и т.п.) select остаётся нативным, чтобы открывалась
+// системная колёсная прокрутка ОС, а не самодельный попап.
+function enhanceCalcSelect(selectEl) {
+    const wrap = document.createElement("div");
+    wrap.className = "bc-custom-select";
+    selectEl.parentNode.insertBefore(wrap, selectEl);
+    wrap.appendChild(selectEl);
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "bc-custom-select-trigger";
+    wrap.appendChild(trigger);
+
+    const popup = document.createElement("div");
+    popup.className = "bc-custom-select-popup hidden";
+    wrap.appendChild(popup);
+
+    function renderTrigger() {
+        const opt = selectEl.options[selectEl.selectedIndex];
+        trigger.textContent = opt ? opt.textContent : "";
+    }
+
+    function close() {
+        popup.classList.add("hidden");
+    }
+
+    function renderPopup() {
+        popup.innerHTML = "";
+        [...selectEl.options].forEach((opt) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = opt.textContent;
+            btn.className = opt.value === selectEl.value ? "active" : "";
+            btn.onclick = () => {
+                selectEl.value = opt.value;
+                selectEl.dispatchEvent(new Event("change"));
+                renderTrigger();
+                close();
+            };
+            popup.appendChild(btn);
+        });
+    }
+
+    trigger.onclick = () => {
+        document.querySelectorAll(".bc-custom-select-popup").forEach((p) => {
+            if (p !== popup) p.classList.add("hidden");
+        });
+        renderPopup();
+        popup.classList.toggle("hidden");
+    };
+
+    document.addEventListener("click", (event) => {
+        if (!wrap.contains(event.target)) close();
+    });
+
+    selectEl.addEventListener("change", renderTrigger);
+    renderTrigger();
+    return { refresh: renderTrigger };
+}
+
+const spiritSelectUI = enhanceCalcSelect(els.recipePickerSpirit);
+const filterSelectUI = enhanceCalcSelect(els.recipePickerFilters);
 
 function normalized(value) {
     return String(value || "").trim().toLowerCase();
@@ -238,14 +303,6 @@ function renderRecipePicker() {
 }
 
 function renderRecipePickerControls() {
-    const filters = [
-        ["all", "все"],
-        ["cocktail", "коктейли"],
-        ["shot", "шоты"],
-        ["prep", "заготовки"],
-        ["infusion", "настойки"],
-        ["custom", "кастом"],
-    ];
     const sorts = [
         ["name", "а-я"],
         ["kind", "по типу"],
@@ -269,19 +326,10 @@ function renderRecipePickerControls() {
     els.recipePickerSpirit.value = [...els.recipePickerSpirit.options].some((option) => option.value === selectedSpirit)
         ? selectedSpirit
         : "all";
+    spiritSelectUI.refresh();
 
-    els.recipePickerFilters.innerHTML = "";
-    filters.forEach(([value, label]) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.textContent = label;
-        btn.className = state.recipeFilter === value ? "active" : "";
-        btn.onclick = () => {
-            state.recipeFilter = value;
-            renderRecipePicker();
-        };
-        els.recipePickerFilters.appendChild(btn);
-    });
+    els.recipePickerFilters.value = state.recipeFilter;
+    filterSelectUI.refresh();
 
     els.recipePickerSorts.innerHTML = "";
     sorts.forEach(([value, label]) => {
@@ -538,6 +586,22 @@ function calculate() {
     renderPresets();
 }
 
+// Разные ингредиенты одного рецепта часто в разных единицах (мл, г, шт/веточка) —
+// сравнивать их количество на одной шкале "доли" бессмысленно (напр. "2 шт" рядом
+// с "1000 мл" выглядели бы как почти пустая полоска). Поэтому шкала считается отдельно
+// внутри каждой группы одинаковых единиц. Долив (топом) тоже не участвует в расчёте
+// максимума — у него нет точного количества, а собственная полоска рисуется фиксированной.
+function computeMaxQtyByUnit(rows) {
+    const map = new Map();
+    rows.forEach((row) => {
+        if (row.isTopup) return;
+        const key = normalized(row.unit);
+        const qty = Number(row.qty || 0);
+        if (!map.has(key) || qty > map.get(key)) map.set(key, qty);
+    });
+    return map;
+}
+
 function renderRows() {
     els.rows.innerHTML = "";
     const recipe = state.recipesById[state.selectedId];
@@ -548,7 +612,7 @@ function renderRows() {
         multiplier,
         `root:${index}:${item.targetId || item.name}:${normalized(item.unit)}`
     ));
-    const maxQty = Math.max(...directRows.map((row) => Number(row.qty || 0)), 1);
+    const maxQtyByUnit = computeMaxQtyByUnit(directRows);
 
     if (directRows.length === 0) {
         const empty = document.createElement("div");
@@ -559,7 +623,7 @@ function renderRows() {
     }
 
     directRows.forEach((row) => {
-        renderCalcRow(row, { maxQty, level: 0, key: row.key });
+        renderCalcRow(row, { maxQtyByUnit, level: 0, key: row.key });
         if (row.type === "sub" && row.recipeId && state.expandedPreps.has(row.key)) {
             renderRecipeTree(row.recipeId, row.qty, row.unit, 1, row.key);
         }
@@ -600,9 +664,10 @@ function renderCalcRow(row, options) {
     const share = document.createElement("span");
     share.className = "bc-calc-share";
     const bar = document.createElement("i");
+    const groupMax = options.maxQtyByUnit ? (options.maxQtyByUnit.get(normalized(row.unit)) || 1) : (options.maxQty || 1);
     bar.style.width = row.isTopup
         ? "28%"
-        : Math.max(5, Math.min(100, (Number(row.qty || 0) / options.maxQty) * 100)) + "%";
+        : Math.max(5, Math.min(100, (Number(row.qty || 0) / groupMax) * 100)) + "%";
     share.appendChild(bar);
 
     item.appendChild(name);
@@ -614,20 +679,33 @@ function renderCalcRow(row, options) {
 
 function renderRecipeTree(recipeId, requiredQty, requiredUnit, level, path) {
     const recipe = state.recipesById[recipeId];
-    if (!recipe || !recipe.yield_qty) return;
-    const qtyInRecipeUnit = amountInRecipeYieldUnit(requiredQty, requiredUnit || recipe.yield_unit, recipe);
-    const factor = qtyInRecipeUnit / Number(recipe.yield_qty || 1);
+    if (!recipe) return;
     const items = state.itemsByRecipe[recipeId] || [];
-    const maxQty = Math.max(...items.map((item) => Number(item.qty || item.topup_default_qty || 0) * factor), 1);
+    if (items.length === 0) return;
 
-    items.forEach((item, index) => {
+    // У заготовки может быть не указан объём выхода (yield_qty) в карточке рецепта —
+    // тогда пропорцию для пересчёта посчитать нечем. Раньше в этом случае состав вообще
+    // не показывался (кнопка "+" переключалась в "−", но строк не появлялось). Теперь
+    // показываем состав "как в рецепте" (factor=1) и явно предупреждаем, что это без пересчёта.
+    const hasYield = !!recipe.yield_qty;
+    const factor = hasYield
+        ? amountInRecipeYieldUnit(requiredQty, requiredUnit || recipe.yield_unit, recipe) / Number(recipe.yield_qty)
+        : 1;
+    if (!hasYield) {
+        const note = document.createElement("div");
+        note.className = "bc-calc-tree-note";
+        note.style.setProperty("--level", String(level));
+        note.textContent = "в рецепте «" + recipe.name + "» не указан объём выхода — состав показан без пересчёта под нужное количество";
+        els.rows.appendChild(note);
+    }
+    const treeRows = items.map((item) => {
         const isSub = item.isSub && item.targetId;
         const subRecipe = isSub ? state.recipesById[item.targetId] : null;
         const unit = item.is_topup ? "" : (item.unit || (subRecipe && subRecipe.yield_unit) || "");
         const qty = item.is_topup
             ? Number(item.topup_default_qty || 0)
             : Number(item.qty || 0) * factor;
-        const row = {
+        return {
             type: isSub ? "sub" : "ingredient",
             name: item.name,
             perOne: item.is_topup ? item.topup_default_qty : item.qty,
@@ -636,10 +714,15 @@ function renderRecipeTree(recipeId, requiredQty, requiredUnit, level, path) {
             isTopup: item.is_topup,
             recipeId: isSub ? item.targetId : null,
         };
-        const key = `${path}>${index}:${item.targetId || item.name}:${normalized(unit)}`;
-        renderCalcRow(row, { maxQty, level, key });
-        if (isSub && state.expandedPreps.has(key)) {
-            renderRecipeTree(item.targetId, qty, unit, level + 1, key);
+    });
+    const maxQtyByUnit = computeMaxQtyByUnit(treeRows);
+
+    treeRows.forEach((row, index) => {
+        const item = items[index];
+        const key = `${path}>${index}:${item.targetId || item.name}:${normalized(row.unit)}`;
+        renderCalcRow(row, { maxQtyByUnit, level, key });
+        if (row.type === "sub" && state.expandedPreps.has(key)) {
+            renderRecipeTree(row.recipeId, row.qty, row.unit, level + 1, key);
         }
     });
 }
@@ -647,9 +730,10 @@ function renderRecipeTree(recipeId, requiredQty, requiredUnit, level, path) {
 function collectTreeKeys(recipeId, requiredQty, requiredUnit, level, path, targetSet) {
     if (level > 12) return;
     const recipe = state.recipesById[recipeId];
-    if (!recipe || !recipe.yield_qty) return;
-    const qtyInRecipeUnit = amountInRecipeYieldUnit(requiredQty, requiredUnit || recipe.yield_unit, recipe);
-    const factor = qtyInRecipeUnit / Number(recipe.yield_qty || 1);
+    if (!recipe) return;
+    const factor = recipe.yield_qty
+        ? amountInRecipeYieldUnit(requiredQty, requiredUnit || recipe.yield_unit, recipe) / Number(recipe.yield_qty)
+        : 1;
 
     (state.itemsByRecipe[recipeId] || []).forEach((item, index) => {
         if (!item.isSub || !item.targetId) return;
@@ -765,9 +849,17 @@ els.recipePickerSpirit.onchange = () => {
     state.recipeSpirit = els.recipePickerSpirit.value;
     renderRecipePicker();
 };
+els.recipePickerFilters.onchange = () => {
+    state.recipeFilter = els.recipePickerFilters.value;
+    renderRecipePicker();
+};
 document.addEventListener("click", (event) => {
     if (!els.recipePicker.contains(event.target)) closeRecipePicker();
+    document.querySelectorAll(".bc-picker-filter.open").forEach((el) => {
+        if (!el.contains(event.target)) el.classList.remove("open");
+    });
 });
+els.recipePickerCloseBtn.onclick = closeRecipePicker;
 els.recipeSearchInput.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
         closeRecipePicker();

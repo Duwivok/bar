@@ -126,19 +126,17 @@
     gap: 10px;
 }
 
-.ev-modal-box input {
-    width: 100%;
-    min-height: 38px;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--text);
-    padding: 8px 10px;
+/* Поля ввода — те же .bc-field, что и в форме добавления рецепта (общий стиль,
+   ничего переопределять не нужно), кроме починки иконки календаря на тёмном фоне. */
+.ev-modal-box input[type="date"] {
+    color-scheme: dark;
 }
 
 .ev-modal-submit {
-    width: 100%;
-    margin-top: 14px;
+    display: block;
+    width: auto;
+    min-width: 220px;
+    margin: 22px auto 0;
 }
 
 /* ---- Тулбар поиска/фильтров/сортировки внутри уже собранного меню ---- */
@@ -286,6 +284,7 @@
     display: grid;
     grid-template-columns: 34px 1fr 34px;
     height: 36px;
+    min-width: 0;
     border: 1px solid var(--line);
     border-radius: 9px;
     overflow: hidden;
@@ -308,6 +307,8 @@
 }
 
 .ev-stepper input {
+    width: 100%;
+    min-width: 0;
     border: 0;
     background: transparent;
     color: var(--text);
@@ -429,14 +430,34 @@
 
 .ev-category-group {
     margin: 0 28px 14px 0;
-    padding: 6px 18px 10px;
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: rgba(255, 255, 255, 0.025);
+    overflow: hidden;
+}
+
+.ev-category-head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 14px 18px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    min-height: 0;
+    text-align: left;
+}
+
+.ev-category-arrow {
+    flex: 0 0 auto;
+    color: var(--muted-2);
+    font-size: 11px;
 }
 
 .ev-category-group h4 {
-    margin: 10px 0 4px;
+    margin: 0;
     color: var(--muted-2);
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -444,18 +465,27 @@
     font-weight: 600;
 }
 
+.ev-category-body {
+    padding: 0 18px 8px;
+}
+
+/* Обёртка на всю позицию (чек-строка + строка упаковки) — так граница-разделитель
+   отделяет разные позиции друг от друга, а не строку названия от её же строки упаковки. */
+.ev-shopping-item {
+    border-bottom: 1px solid var(--line-soft);
+    padding: 10px 0;
+}
+
+.ev-shopping-item:last-child {
+    border-bottom: 0;
+}
+
 .ev-check-row {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--line-soft);
     font-size: 13px;
     transition: opacity 0.25s ease;
-}
-
-.ev-check-row:last-of-type {
-    border-bottom: 0;
 }
 
 .ev-check-row.checked {
@@ -486,8 +516,19 @@
     font-weight: 700;
 }
 
+.ev-hand-icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    color: var(--orange);
+}
+
+.ev-hand-icon svg {
+    width: 15px;
+    height: 15px;
+}
+
 .ev-pack-line {
-    margin: -4px 0 10px 34px;
+    margin: 6px 0 0 34px;
     color: var(--muted);
     font-size: 12px;
 }
@@ -680,16 +721,6 @@
     .ev-header {
         flex-direction: column;
         padding-right: 0;
-    }
-
-    /* На мобильном глазок-переключатель версии должен быть в правом верхнем углу
-       экрана, а не встроен в поток шапки (там он "докнут" через versionToggleSlot
-       для десктопа/для соответствия странице "Рецепты"). */
-    #versionToggleBtn.docked {
-        position: fixed;
-        top: 14px;
-        right: 14px;
-        z-index: 20;
     }
 
     /* Кнопка "+ добавить рецепт" на мобильном переносится JS-ом (setupAddPickerPlacement)

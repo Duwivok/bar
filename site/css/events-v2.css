@@ -39,14 +39,29 @@
 }
 
 /* Модалка "+ новое событие" / "скопировать в новое мероприятие" — та же разметка
-   (.overlay/.overlay-panel/.form-grid), что и на других страницах, но перекрашена
-   в тёмную v2-палитру вместо светлой v1-темы. Скоуп через #addOverlay, чтобы не
-   затронуть .overlay-panel на других страницах (ingredients-v2, converter-v2). */
+   (.overlay/.overlay-panel), что и на других страницах, но перекрашена в тёмную
+   v2-палитру вместо светлой v1-темы; поля ввода — те же .bc-field, что и в форме
+   добавления рецепта. Скоуп через #addOverlay, чтобы не затронуть .overlay-panel
+   на других страницах (ingredients-v2, converter-v2). */
 
 #addOverlay .overlay-panel {
     background: #0d0a08;
     color: var(--text);
     border-left: 1px solid var(--line);
+}
+
+/* .overlay-panel input (styles-v2.css) красит поля в светлую v1-тему и имеет ту же
+   специфичность, что и .bc-field input — а объявлена позже в файле, поэтому побеждает
+   в каскаде. Перебиваем через #addOverlay (id всегда весомее класса). */
+#addOverlay .bc-field input {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line);
+    color: var(--text);
+}
+
+#addOverlay .bc-field input:focus {
+    outline: none;
+    border-color: var(--orange);
 }
 
 #addOverlay .overlay-close {
@@ -57,17 +72,19 @@
 }
 
 #addOverlay h3 {
-    font-family: "Unbounded", sans-serif;
     color: var(--text);
 }
 
-#addOverlay label {
-    color: var(--muted);
+/* color-scheme:dark — иначе браузер рисует иконку календаря в нативном тёмном
+   цвете, который на тёмном фоне поля становится невидимым (и клик мимо неё
+   не открывает пикер по клику, кажется, что поле "неактивно"). */
+#addOverlay input[type="date"] {
+    color-scheme: dark;
 }
 
-#addOverlay input {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--line);
-    color: var(--text);
-    border-radius: 10px;
+#addOverlay .ev-list-modal-submit {
+    display: block;
+    width: auto;
+    min-width: 220px;
+    margin: 24px auto 0;
 }

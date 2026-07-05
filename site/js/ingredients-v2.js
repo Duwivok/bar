@@ -215,16 +215,13 @@ function addMetaLine(container, label, value) {
     container.appendChild(line);
 }
 
-function buildReadDetail(record) {
+function buildReadDetail(record, opts = {}) {
+    const { titleActions = true } = opts;
     const root = document.createElement("div");
 
     const top = document.createElement("div");
     top.className = "bc-detail-top";
     const titleWrap = document.createElement("div");
-    const kicker = document.createElement("div");
-    kicker.className = "bc-kicker";
-    kicker.textContent = `${record.category || "без категории"} · ${record.base_unit || "без ед."}`;
-    titleWrap.appendChild(kicker);
 
     const titleRow = document.createElement("div");
     titleRow.className = "ing-title-row";
@@ -232,25 +229,35 @@ function buildReadDetail(record) {
     h2.textContent = record.name;
     titleRow.appendChild(h2);
 
-    const editBtn = document.createElement("button");
-    editBtn.type = "button";
-    editBtn.className = "bc-icon-btn";
-    editBtn.title = "Изменить";
-    editBtn.setAttribute("aria-label", "Изменить");
-    editBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4Z"/><path d="M14 5l3 3"/></svg>';
-    editBtn.onclick = () => openIngredientFormEdit(record.id);
-    titleRow.appendChild(editBtn);
+    // На мобильном (drawer) карандаш/корзина живут в шапке рядом с крестиком закрытия
+    // (см. updateDrawerActions) — тут их дублировать не нужно, только на десктопной панели.
+    if (titleActions) {
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "bc-icon-btn";
+        editBtn.title = "Изменить";
+        editBtn.setAttribute("aria-label", "Изменить");
+        editBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4Z"/><path d="M14 5l3 3"/></svg>';
+        editBtn.onclick = () => openIngredientFormEdit(record.id);
+        titleRow.appendChild(editBtn);
 
-    const deleteBtn = document.createElement("button");
-    deleteBtn.type = "button";
-    deleteBtn.className = "bc-icon-btn ing-danger";
-    deleteBtn.title = "Удалить позицию";
-    deleteBtn.setAttribute("aria-label", "Удалить позицию");
-    deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 7h14M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg>';
-    deleteBtn.onclick = () => deleteIngredient(record);
-    titleRow.appendChild(deleteBtn);
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "bc-icon-btn ing-danger";
+        deleteBtn.title = "Удалить позицию";
+        deleteBtn.setAttribute("aria-label", "Удалить позицию");
+        deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 7h14M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg>';
+        deleteBtn.onclick = () => deleteIngredient(record);
+        titleRow.appendChild(deleteBtn);
+    }
 
     titleWrap.appendChild(titleRow);
+
+    const kicker = document.createElement("div");
+    kicker.className = "bc-kicker";
+    kicker.textContent = `${record.category || "без категории"} · ${record.base_unit || "без ед."}`;
+    titleWrap.appendChild(kicker);
+
     top.appendChild(titleWrap);
     root.appendChild(top);
 
@@ -276,19 +283,59 @@ function buildReadDetail(record) {
         empty.textContent = "Вариантов ещё нет";
         items.appendChild(empty);
     } else {
-        pkgs.forEach((pkg) => {
+        pkgs.forEach((pkg, index) => {
             const row = document.createElement("div");
-            row.className = "bc-item";
-            const label = document.createElement("span");
+            row.className = "ing-pkg-item";
+
+            const header = document.createElement("div");
+            header.className = "ing-pkg-header";
+            const indexEl = document.createElement("span");
+            indexEl.className = "bc-index";
+            indexEl.textContent = String(index + 1).padStart(2, "0");
+            header.appendChild(indexEl);
+
+            const main = document.createElement("span");
+            main.className = "ing-pkg-main";
             const sizeLabel = pkg.package_size != null ? `${pkg.package_size} ${record.base_unit || ""}`.trim() : "размер?";
             const priceLabel = pkg.package_price != null ? moneyLabel(pkg.package_price) : "без цены";
-            label.textContent = [sizeLabel, priceLabel, pkg.purchase_unit, pkg.purchase_source].filter(Boolean).join(" · ");
-            row.appendChild(label);
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.textContent = "проверить";
-            btn.onclick = () => checkPackagePrice(record.id, pkg, pkg.id);
-            row.appendChild(btn);
+            main.textContent = [sizeLabel, priceLabel].join(" · ");
+            header.appendChild(main);
+
+            const checkBtn = document.createElement("button");
+            checkBtn.type = "button";
+            checkBtn.className = "bc-icon-btn ing-pkg-check";
+            checkBtn.title = "Проверить цену";
+            checkBtn.setAttribute("aria-label", "Проверить цену");
+            checkBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v18M8.5 7.5h4.75a2.75 2.75 0 1 1 0 5.5h-3.5a2.75 2.75 0 1 0 0 5.5H15"/></svg>';
+            checkBtn.onclick = () => checkPackagePrice(record.id, pkg, pkg.id);
+            header.appendChild(checkBtn);
+
+            row.appendChild(header);
+
+            if (pkg.purchase_unit) {
+                const unitRow = document.createElement("div");
+                unitRow.className = "ing-pkg-row";
+                const key = document.createElement("span");
+                key.textContent = "закупочная ед.";
+                const val = document.createElement("b");
+                val.textContent = pkg.purchase_unit;
+                unitRow.appendChild(key);
+                unitRow.appendChild(val);
+                row.appendChild(unitRow);
+            }
+
+            if (pkg.purchase_source) {
+                const sourceRow = document.createElement("div");
+                sourceRow.className = "ing-pkg-row";
+                const key = document.createElement("span");
+                key.textContent = "источник";
+                const val = document.createElement("b");
+                val.textContent = pkg.purchase_source;
+                sourceRow.appendChild(key);
+                sourceRow.appendChild(val);
+                row.appendChild(sourceRow);
+            }
+
             items.appendChild(row);
             const check = buildPackagePriceCheck(pkg.id);
             if (check) items.appendChild(check);
@@ -339,8 +386,14 @@ function renderDetail() {
         if (!record) { closeDrawer(); return; }
         const drawerContent = document.getElementById("drawerContent");
         drawerContent.innerHTML = "";
-        drawerContent.appendChild(buildReadDetail(record));
+        drawerContent.appendChild(buildReadDetail(record, { titleActions: false }));
+        updateDrawerActions(record);
     }
+}
+
+function updateDrawerActions(record) {
+    document.getElementById("drawerEditBtn").onclick = () => openIngredientFormEdit(record.id);
+    document.getElementById("drawerDeleteBtn").onclick = () => deleteIngredient(record);
 }
 
 function openDrawer() {
@@ -348,7 +401,8 @@ function openDrawer() {
     if (!record) return;
     const drawerContent = document.getElementById("drawerContent");
     drawerContent.innerHTML = "";
-    drawerContent.appendChild(buildReadDetail(record));
+    drawerContent.appendChild(buildReadDetail(record, { titleActions: false }));
+    updateDrawerActions(record);
     document.getElementById("detailDrawer").classList.remove("hidden");
     document.documentElement.classList.add("drawer-open");
 }

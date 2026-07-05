@@ -49,11 +49,8 @@
         }
     });
 
-    const slot = document.getElementById("versionToggleSlot");
-    if (slot) {
-        btn.classList.add("docked");
-        slot.appendChild(btn);
-    } else {
-        document.body.appendChild(btn);
-    }
+    // Раньше кнопка "докалась" в шапку через #versionToggleSlot (там, где он есть)
+    // и скроллилась вместе со страницей. Так на длинных списках она пропадала из
+    // виду — теперь везде фиксирована в углу экрана, независимо от разметки страницы.
+    document.body.appendChild(btn);
 })();

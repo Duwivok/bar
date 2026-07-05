@@ -8,31 +8,242 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Unbounded:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles-v2.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0908">
 </head>
 <body class="bc-v2-page">
 <div class="bc-shell">
-    <aside class="bc-rail" aria-label="Навигация"><a class="bc-logo" href="index.html">B</a><nav class="bc-nav"><a href="index.html"><span class="bc-nav-label">Главная</span></a><a href="recipes-v2.html"><span class="bc-nav-label">Рецепты</span></a><a href="calculator-v2.html"><span class="bc-nav-label">Калькулятор</span></a><a href="events-v2.html"><span class="bc-nav-label">События</span></a><a href="ingredients-v2.html"><span class="bc-nav-label">Сырье</span></a><a href="converter-v2.html" class="active"><span class="bc-nav-label">Единицы</span></a></nav></aside>
-    <main class="bc-window bc-window-single">
-        <section class="bc-list-pane bc-v2-content">
-            <header class="bc-header"><div><div class="bc-kicker">BARCALC.OS / UNITS</div><h1>Единицы</h1></div><button class="bc-primary-link" id="addRowBtn" type="button">+ конвертация</button></header>
-            <div id="status" class="status bc-status"></div>
-            <div class="toolbar bc-toolbar"><input type="text" id="searchInput" class="search-input bc-search" placeholder="Поиск по ингредиенту..."></div>
-            <div class="card bc-v2-card"><div class="conv-rows" id="conversionsBody"></div><div class="field-hint" id="emptyHint"></div></div>
-            <div class="card bulk-box bc-v2-card"><h3>Быстрый ввод пачкой</h3><textarea id="bulkInput" placeholder="Мята	веточка	2	примерная оценка"></textarea><div style="margin-top:10px;"><button class="primary" id="bulkImportBtn">Импортировать строки</button></div></div>
-            <h2>Выход продукта из сырья</h2>
-            <div class="toolbar"><button class="primary" id="addYieldRowBtn">+ выход из сырья</button></div>
-            <div class="card bc-v2-card"><div class="conv-rows" id="yieldBody"></div><div class="field-hint" id="yieldEmptyHint"></div></div>
+    <aside class="bc-rail" aria-label="Навигация">
+        <a class="bc-logo" href="index.html">B</a>
+        <nav class="bc-nav">
+            <a href="index.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>
+                <span class="bc-nav-label">Главная</span>
+            </a>
+            <a href="recipes-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4.5 4h15L12.5 13v6.5h3M11.5 13v6.5h-3"/></svg>
+                <span class="bc-nav-label">Рецепты</span>
+            </a>
+            <a href="calculator-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7.5h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg>
+                <span class="bc-nav-label">Калькулятор</span>
+            </a>
+            <a href="events-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3"/></svg>
+                <span class="bc-nav-label">События</span>
+            </a>
+            <a href="ingredients-v2.html">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3.5 7 12 3.5 20.5 7 12 10.5 3.5 7Z"/><path d="M3.5 7v9.5L12 20.5l8.5-4V7"/><path d="M12 10.5v10"/></svg>
+                <span class="bc-nav-label">Сырье</span>
+            </a>
+            <a href="converter-v2.html" class="active">
+                <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9.5 3h5M10.5 3v4.5L5.8 18a2 2 0 0 0 1.8 2.9h8.8a2 2 0 0 0 1.8-2.9L13.5 7.5V3"/><path d="M8 15h8"/></svg>
+                <span class="bc-nav-label">Единицы</span>
+            </a>
+        </nav>
+    </aside>
+
+    <main class="bc-window">
+        <section class="bc-list-pane">
+            <header class="bc-header">
+                <div>
+                    <div class="bc-kicker">BARCALC.OS / UNITS</div>
+                    <h1>Единицы <span id="convCount">0</span></h1>
+                </div>
+                <div class="bc-header-actions">
+                    <span id="versionToggleSlot"></span>
+                    <button id="toolsBtn" type="button">инструменты</button>
+                    <button class="bc-primary-link" id="addBtn" type="button">+ конвертация</button>
+                </div>
+            </header>
+
+            <div id="status" class="bc-status"></div>
+
+            <div class="bc-recipes-sticky" id="convSticky">
+                <div class="bc-segmented bc-form-segmented" id="modeTabs">
+                    <span class="bc-segmented-thumb"></span>
+                    <button type="button" data-mode="conv" class="active">конвертации</button>
+                    <button type="button" data-mode="yield">выход из сырья</button>
+                </div>
+
+                <div class="bc-toolbar">
+                    <input id="searchInput" class="bc-search" type="search" placeholder="поиск по ингредиенту...">
+                </div>
+            </div>
+
+            <div id="convList" class="bc-recipe-list"></div>
         </section>
-        <div class="bc-marquee" aria-hidden="true"><div class="bc-marquee-track"><span>UNITS</span><span>CONVERSION</span><span>YIELD</span><span>UNITS</span><span>CONVERSION</span><span>YIELD</span></div></div>
+
+        <aside class="bc-detail-pane" id="detailPane"></aside>
+
+        <div class="bc-marquee" aria-hidden="true">
+            <div class="bc-marquee-track">
+                <span>UNITS</span><span>CONVERSION</span><span>YIELD</span>
+                <span>UNITS</span><span>CONVERSION</span><span>YIELD</span>
+            </div>
+        </div>
     </main>
 </div>
+
+<div id="detailDrawer" class="bc-drawer hidden">
+    <div class="bc-drawer-panel">
+        <div class="bc-drawer-actions">
+            <button id="drawerEditBtn" type="button" class="bc-icon-btn" title="Изменить" aria-label="Изменить">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4Z"/><path d="M14 5l3 3"/></svg>
+            </button>
+            <button id="drawerDeleteBtn" type="button" class="bc-icon-btn ing-danger" title="Удалить" aria-label="Удалить">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 7h14M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg>
+            </button>
+            <button id="closeDrawerBtn" type="button" class="bc-icon-btn" title="Закрыть" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+        <div id="drawerContent"></div>
+    </div>
+</div>
+
+<div id="convFormDrawer" class="bc-drawer hidden">
+    <div class="bc-drawer-panel bc-form-panel">
+        <div class="bc-drawer-actions">
+            <div>
+                <div class="bc-kicker">BARCALC.OS / UNITS</div>
+                <h3 id="convFormTitle" class="bc-form-title">Новая конвертация</h3>
+            </div>
+            <button id="convFormCloseBtn" type="button" class="bc-icon-btn" title="Закрыть" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+
+        <div id="convFormStatus" class="bc-status"></div>
+
+        <div class="bc-form-scroll">
+            <section class="bc-form-section">
+                <div class="bc-section-title">Конвертация единицы рецепта в базовую</div>
+                <div class="bc-field">
+                    <label for="cfName">Ингредиент</label>
+                    <input type="text" id="cfName" list="ingredientNamesList">
+                </div>
+                <div class="bc-field-row">
+                    <div class="bc-field">
+                        <label for="cfUnit">Единица рецепта</label>
+                        <input type="text" id="cfUnit" list="unitOptionsList">
+                    </div>
+                    <div class="bc-field">
+                        <label for="cfCoeff">Коэффициент</label>
+                        <input type="text" id="cfCoeff" inputmode="decimal">
+                    </div>
+                </div>
+                <div class="bc-field">
+                    <label for="cfComment">Комментарий</label>
+                    <input type="text" id="cfComment" placeholder="необязательно">
+                </div>
+                <div class="bc-field-hint" id="cfFormula"></div>
+            </section>
+        </div>
+
+        <div class="bc-form-footer">
+            <button type="button" class="bc-primary-link bc-form-save" id="cfSaveBtn">Сохранить конвертацию</button>
+        </div>
+    </div>
+</div>
+
+<div id="yieldFormDrawer" class="bc-drawer hidden">
+    <div class="bc-drawer-panel bc-form-panel">
+        <div class="bc-drawer-actions">
+            <div>
+                <div class="bc-kicker">BARCALC.OS / UNITS</div>
+                <h3 id="yfFormTitle" class="bc-form-title">Новый выход из сырья</h3>
+            </div>
+            <button id="yieldFormCloseBtn" type="button" class="bc-icon-btn" title="Закрыть" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+
+        <div id="yieldFormStatus" class="bc-status"></div>
+
+        <div class="bc-form-scroll">
+            <section class="bc-form-section">
+                <div class="bc-section-title">Продукт, который получается из сырья</div>
+                <div class="bc-field">
+                    <label for="yfOutputName">Продукт (заготовка)</label>
+                    <input type="text" id="yfOutputName">
+                </div>
+                <div class="bc-field-row">
+                    <div class="bc-field">
+                        <label for="yfYieldQty">Выход — кол-во</label>
+                        <input type="text" id="yfYieldQty" inputmode="decimal">
+                    </div>
+                    <div class="bc-field">
+                        <label for="yfYieldUnit">Выход — ед.</label>
+                        <input type="text" id="yfYieldUnit" list="unitOptionsList">
+                    </div>
+                </div>
+            </section>
+            <section class="bc-form-section">
+                <div class="bc-section-title">Из какого сырья</div>
+                <div class="bc-field">
+                    <label for="yfRawName">Сырьё</label>
+                    <input type="text" id="yfRawName" list="ingredientNamesList">
+                </div>
+                <div class="bc-field-row">
+                    <div class="bc-field">
+                        <label for="yfRawQty">Кол-во сырья</label>
+                        <input type="text" id="yfRawQty" inputmode="decimal">
+                    </div>
+                    <div class="bc-field">
+                        <label for="yfRawUnit">Ед. сырья</label>
+                        <input type="text" id="yfRawUnit" list="unitOptionsList">
+                    </div>
+                </div>
+                <div class="bc-field">
+                    <label for="yfComment">Комментарий</label>
+                    <input type="text" id="yfComment" placeholder="необязательно">
+                </div>
+                <div class="bc-field-hint" id="yfFormula"></div>
+            </section>
+        </div>
+
+        <div class="bc-form-footer">
+            <button type="button" class="bc-primary-link bc-form-save" id="yfSaveBtn">Сохранить выход</button>
+        </div>
+    </div>
+</div>
+
+<div id="toolsOverlay" class="bc-drawer hidden">
+    <div class="bc-drawer-panel bc-form-panel">
+        <div class="bc-drawer-actions">
+            <h3 class="bc-form-title" style="margin-right:auto;">Инструменты</h3>
+            <button id="closeToolsBtn" type="button" class="bc-icon-btn" title="Закрыть" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+
+        <div class="bc-form-scroll">
+            <div class="bc-v2-card">
+                <h4>Быстрый ввод пачкой — конвертации</h4>
+                <p class="field-hint">Одна строка = одна конвертация, поля через Tab: Ингредиент, Единица рецепта, Коэффициент, Комментарий. Ингредиент должен уже существовать в Сырье.</p>
+                <textarea id="bulkConvInput" rows="5" placeholder="Мята	веточка	2	примерная оценка"></textarea>
+                <button type="button" class="primary bc-form-save" id="bulkConvImportBtn">импортировать строки</button>
+            </div>
+
+            <div class="bc-v2-card">
+                <h4>Быстрый ввод пачкой — выход из сырья</h4>
+                <p class="field-hint">Поля через Tab: Продукт, Сырьё, Кол-во сырья, Ед. сырья, Кол-во выхода, Ед. выхода, Комментарий.</p>
+                <textarea id="bulkYieldInput" rows="5" placeholder="Цедра лимона	Лимон	1	шт	5	г	"></textarea>
+                <button type="button" class="primary bc-form-save" id="bulkYieldImportBtn">импортировать строки</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <datalist id="ingredientNamesList"></datalist>
 <datalist id="unitOptionsList"></datalist>
+
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/version-toggle.js"></script>
 <script src="js/constants.js"></script>
 <script src="js/search-clear.js"></script>
-<script src="js/converter.js"></script>
+<script src="js/converter-v2.js"></script>
 </body>
 </html>

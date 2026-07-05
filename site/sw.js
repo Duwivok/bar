@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v16';
+const CACHE_VERSION = 'v19';
 const CACHE_NAME = 'bar-calc-' + CACHE_VERSION;
 
 const APP_SHELL = [
@@ -35,6 +35,7 @@ const APP_SHELL = [
     'js/event.js',
     'js/event-v2.js',
     'js/event-calc.js',
+    'js/event-calc-v2.js',
     'js/converter.js',
     'js/ingredients.js',
     'images/home-banner.jpg',

@@ -374,6 +374,50 @@ eventEditEls.closeBtn.onclick = closeEventEdit;
 eventEditEls.saveBtn.onclick = saveEventEdit;
 eventEditEls.overlay.addEventListener("click", (e) => { if (e.target === eventEditEls.overlay) closeEventEdit(); });
 
+// ---- "Где используется" — клик по позиции в "Закупке" ----
+
+const sourcesEls = {
+    overlay: document.getElementById("sourcesOverlay"),
+    title: document.getElementById("sourcesTitle"),
+    list: document.getElementById("sourcesList"),
+    closeBtn: document.getElementById("sourcesCloseBtn"),
+};
+
+function openSourcesModal(entry) {
+    sourcesEls.title.textContent = "Где используется: " + entry.name;
+    sourcesEls.list.innerHTML = "";
+    const sources = entry.sources || [];
+    if (sources.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "bc-empty";
+        empty.textContent = "Не удалось определить источники.";
+        sourcesEls.list.appendChild(empty);
+    } else {
+        sources
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name, "ru"))
+            .forEach((s) => {
+                const row = document.createElement("div");
+                row.className = "drawer-row";
+                const name = document.createElement("span");
+                name.textContent = s.name;
+                const qty = document.createElement("span");
+                qty.textContent = formatQty(s.qty, s.unit);
+                row.appendChild(name);
+                row.appendChild(qty);
+                sourcesEls.list.appendChild(row);
+            });
+    }
+    sourcesEls.overlay.classList.remove("hidden");
+}
+
+function closeSourcesModal() {
+    sourcesEls.overlay.classList.add("hidden");
+}
+
+sourcesEls.closeBtn.onclick = closeSourcesModal;
+sourcesEls.overlay.addEventListener("click", (e) => { if (e.target === sourcesEls.overlay) closeSourcesModal(); });
+
 // ---- Загрузка ----
 
 async function loadAll() {
@@ -386,7 +430,7 @@ async function loadAll() {
         db.from("unit_conversions").select("ingredient_id,from_unit,coefficient"),
         db.from("event_menu_items").select("recipe_id, qty_portions").eq("event_id", eventId).eq("included", true),
         db.from("event_ingredient_state").select("ingredient_id, is_checked").eq("event_id", eventId),
-        db.from("event_prep_state").select("recipe_id, container_size, is_checked, expand_nested, buy_ready").eq("event_id", eventId),
+        db.from("event_prep_state").select("*").eq("event_id", eventId),
         db.from("event_manual_items").select("*").eq("event_id", eventId),
     ]);
 
@@ -634,16 +678,44 @@ function renderPicker() {
     });
 }
 
+// Общая невидимая подложка позади любого открытого попапа (фильтр/пикер) — перехватывает
+// клик "мимо", закрывая попап, вместо того чтобы клик проваливался на кнопку под ним
+// (степпер, крестик удаления и т.п.), которая иначе случайно срабатывала бы вместе с закрытием.
+const popupOverlay = document.createElement("div");
+popupOverlay.className = "bc-filter-overlay hidden";
+document.body.appendChild(popupOverlay);
+let onOverlayClose = null;
+function openWithOverlay(onClose) {
+    onOverlayClose = onClose;
+    popupOverlay.classList.remove("hidden");
+}
+function closeOverlay() {
+    popupOverlay.classList.add("hidden");
+    const cb = onOverlayClose;
+    onOverlayClose = null;
+    if (cb) cb();
+}
+popupOverlay.addEventListener("click", (event) => {
+    event.stopPropagation();
+    closeOverlay();
+});
+
 function openPicker() {
     els.recipePickerPopup.classList.remove("hidden");
     els.recipePickerBtn.setAttribute("aria-expanded", "true");
     renderPicker();
     els.recipeSearchInput.focus();
+    openWithOverlay(() => {
+        els.recipePickerPopup.classList.add("hidden");
+        els.recipePickerBtn.setAttribute("aria-expanded", "false");
+    });
 }
 
 function closePicker() {
     els.recipePickerPopup.classList.add("hidden");
     els.recipePickerBtn.setAttribute("aria-expanded", "false");
+    popupOverlay.classList.add("hidden");
+    onOverlayClose = null;
 }
 
 els.recipePickerBtn.onclick = () => {
@@ -652,16 +724,8 @@ els.recipePickerBtn.onclick = () => {
 };
 els.recipeSearchInput.oninput = () => { pickerSearch = els.recipeSearchInput.value; renderPicker(); };
 els.recipePickerSpirit.onchange = () => { pickerSpirit = els.recipePickerSpirit.value; renderPicker(); };
-document.addEventListener("click", (event) => {
-    // composedPath(), а не target — клик по фильтру/сортировке тут же перерисовывает
-    // список кнопок (innerHTML=""), кликнутая кнопка удаляется из DOM ещё до того, как
-    // событие дойдёт сюда по всплытию, и .contains(event.target) на отсоединённом узле
-    // всегда вернёт false, из-за чего попап закрывался при любом клике внутри себя.
-    const path = event.composedPath();
-    if (!path.includes(document.getElementById("recipePicker"))) closePicker();
-});
 document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closePicker();
+    if (event.key === "Escape") closeOverlay();
 });
 
 // ---- Вкладка "Меню": состав барной карты ----
@@ -676,16 +740,18 @@ async function addMenuItem(recipeId) {
     refreshAfterChange();
 }
 
-async function removeMenuItem(recipeId) {
-    await db.from("event_menu_items").delete().eq("event_id", eventId).eq("recipe_id", recipeId);
+function removeMenuItem(recipeId) {
+    // Локально убираем и перерисовываем сразу, запрос к БД уходит в фоне — иначе на
+    // медленной сети клик по крестику ощутимо "подвисает" перед тем как что-то произойдёт.
     menuItems = menuItems.filter((m) => m.recipe_id !== recipeId);
+    db.from("event_menu_items").delete().eq("event_id", eventId).eq("recipe_id", recipeId);
     refreshAfterChange();
 }
 
-async function updateMenuItemQty(recipeId, qty) {
-    await db.from("event_menu_items").update({ qty_portions: qty }).eq("event_id", eventId).eq("recipe_id", recipeId);
+function updateMenuItemQty(recipeId, qty) {
     const m = menuItems.find((mi) => mi.recipe_id === recipeId);
     if (m) m.qty_portions = qty;
+    db.from("event_menu_items").update({ qty_portions: qty }).eq("event_id", eventId).eq("recipe_id", recipeId);
     refreshAfterChange();
 }
 
@@ -699,20 +765,71 @@ function setupMenuToolbar() {
     const search = document.getElementById("menuSearchInput");
     search.oninput = () => { menuSearch = search.value; renderMenu(); };
 
-    const filtersEl = document.getElementById("menuFilterChips");
-    filtersEl.innerHTML = "";
-    PICKER_FILTERS.forEach(([value, label]) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.textContent = label;
-        btn.className = menuFilter === value ? "active" : "";
-        btn.onclick = () => {
-            menuFilter = value;
-            [...filtersEl.children].forEach((b) => b.classList.toggle("active", b === btn));
-            renderMenu();
-        };
-        filtersEl.appendChild(btn);
-    });
+    // Выпадающий список (как "тип"/"тег" на странице "Рецепты"), а не ряд чипов —
+    // на узком экране "все/коктейли/шоты/настойки/кастом" чипами не помещаются в одну строку.
+    const root = document.getElementById("menuTypeFilter");
+    root.className = "bc-filter";
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "bc-filter-trigger";
+    const label = document.createElement("span");
+    label.className = "bc-filter-label";
+    trigger.appendChild(label);
+    root.appendChild(trigger);
+
+    const popup = document.createElement("div");
+    popup.className = "bc-filter-popup hidden";
+    const list = document.createElement("div");
+    list.className = "bc-filter-list";
+    popup.appendChild(list);
+    root.appendChild(popup);
+
+    function updateTrigger() {
+        const found = PICKER_FILTERS.find(([v]) => v === menuFilter);
+        label.textContent = found ? found[1] : "все";
+        trigger.classList.toggle("active", menuFilter !== "all");
+    }
+
+    function close() {
+        popup.classList.add("hidden");
+        root.classList.remove("open");
+        // Общая подложка скрывается тут напрямую (а не только через closeOverlay/клик
+        // "мимо") — иначе при закрытии повторным кликом по самой кнопке фильтра она
+        // оставалась висеть невидимой поверх страницы и перехватывала все клики.
+        popupOverlay.classList.add("hidden");
+        onOverlayClose = null;
+    }
+
+    function renderOptions() {
+        list.innerHTML = "";
+        PICKER_FILTERS.forEach(([value, text]) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = text;
+            btn.className = menuFilter === value ? "active" : "";
+            btn.onclick = () => {
+                menuFilter = value;
+                updateTrigger();
+                close();
+                renderMenu();
+            };
+            list.appendChild(btn);
+        });
+    }
+
+    trigger.onclick = () => {
+        const isOpen = popup.classList.contains("hidden");
+        if (isOpen) {
+            renderOptions();
+            popup.classList.remove("hidden");
+            root.classList.add("open");
+            openWithOverlay(close);
+        } else {
+            close();
+        }
+    };
+
+    updateTrigger();
 
     const sortsEl = document.getElementById("menuSortChips");
     sortsEl.innerHTML = "";
@@ -993,6 +1110,8 @@ function formatPackageCombo(combo) {
     }).join(", ");
 }
 
+let collapsedShoppingCategories = new Set();
+
 function renderShopping() {
     const listEl = document.getElementById("evShoppingList");
     listEl.innerHTML = "";
@@ -1023,12 +1142,36 @@ function renderShopping() {
     [...byCategory.keys()].sort((a, b) => a.localeCompare(b, "ru")).forEach((cat) => {
         const catItems = byCategory.get(cat);
         const catCost = catItems.reduce((sum, e) => sum + (e.cost || 0), 0);
+        const collapsed = collapsedShoppingCategories.has(cat);
 
         const group = document.createElement("div");
         group.className = "ev-category-group";
+
+        const head = document.createElement("button");
+        head.type = "button";
+        head.className = "ev-category-head";
+        const arrow = document.createElement("span");
+        arrow.className = "ev-category-arrow";
+        arrow.textContent = collapsed ? "▸" : "▾";
         const h = document.createElement("h4");
         h.textContent = catCost > 0 ? `${cat} — ${formatMoney(catCost)}` : cat;
-        group.appendChild(h);
+        head.appendChild(arrow);
+        head.appendChild(h);
+        head.onclick = () => {
+            if (collapsed) collapsedShoppingCategories.delete(cat);
+            else collapsedShoppingCategories.add(cat);
+            renderShopping();
+        };
+        group.appendChild(head);
+
+        if (collapsed) {
+            listEl.appendChild(group);
+            return;
+        }
+
+        const body = document.createElement("div");
+        body.className = "ev-category-body";
+        group.appendChild(body);
 
         const items = catItems.slice().sort((a, b) => {
             const checkedA = isShoppingEntryChecked(a);
@@ -1038,11 +1181,17 @@ function renderShopping() {
         });
 
         items.forEach((entry) => {
+            // Обёртка на всю позицию (чек-строка + строка упаковки) — граница-разделитель
+            // висит на ней целиком, а не на чек-строке, иначе линия оказывалась между
+            // названием и строкой "Купить: ...", а не между разными позициями.
+            const item = document.createElement("div");
+            item.className = "ev-shopping-item";
+
             if (entry.isManual) {
                 const checked = !!entry.is_checked;
                 const row = document.createElement("div");
                 row.className = "ev-check-row" + (checked ? " checked" : "");
-                row.appendChild(createCheckButton(checked, false, async (v) => { await toggleManualItemChecked(entry.manualId, v); renderShopping(); }));
+                row.appendChild(createCheckButton(checked, false, (v) => { toggleManualItemChecked(entry.manualId, v); renderShopping(); }));
                 const name = document.createElement("span");
                 name.className = "ev-check-name";
                 name.textContent = entry.name + " (вручную)";
@@ -1060,9 +1209,10 @@ function renderShopping() {
                 delBtn.className = "bc-icon-btn";
                 delBtn.textContent = "×";
                 delBtn.title = "Удалить";
-                delBtn.onclick = async () => { await deleteManualItem(entry.manualId); renderShopping(); };
+                delBtn.onclick = (e) => { e.stopPropagation(); deleteManualItem(entry.manualId); renderShopping(); };
                 row.appendChild(delBtn);
-                group.appendChild(row);
+                item.appendChild(row);
+                body.appendChild(item);
                 return;
             }
 
@@ -1072,20 +1222,30 @@ function renderShopping() {
 
             const row = document.createElement("div");
             row.className = "ev-check-row" + (checked ? " checked" : "");
-            row.appendChild(createCheckButton(checked, !canCheck, async (v) => {
-                if (entry.isBoughtPrep) await updatePrepState(entry.recipeId, { is_checked: v });
-                else await toggleIngredientChecked(ing.id, v);
+            row.appendChild(createCheckButton(checked, !canCheck, (v) => {
+                // Не ждём ответа сети перед перерисовкой — prepStateMap/ingredientStateMap
+                // уже обновлены синхронно внутри updatePrepState/toggleIngredientChecked,
+                // а сам запрос к БД спокойно уходит в фоне (иначе на медленной сети клик
+                // по галочке ощущается как "не работает").
+                if (entry.isBoughtPrep) updatePrepState(entry.recipeId, { is_checked: v });
+                else toggleIngredientChecked(ing.id, v);
                 renderShopping();
             }));
+
+            if (entry.isManualOverride) {
+                const hand = document.createElement("span");
+                hand.className = "ev-hand-icon";
+                hand.title = "Количество указано вручную";
+                hand.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 13V6.5a1.5 1.5 0 0 1 3 0V12M11 12V5a1.5 1.5 0 0 1 3 0v7M14 12.2V6.5a1.5 1.5 0 0 1 3 0V13M8 13l-1.5-1.4a1.4 1.4 0 0 0-2 2L8.5 18a5 5 0 0 0 4 2h1a5.5 5.5 0 0 0 5.5-5.5V9.5a1.5 1.5 0 0 0-3 0"/></svg>';
+                row.appendChild(hand);
+            }
 
             const name = document.createElement("span");
             name.className = "ev-check-name";
             name.textContent = entry.name + (entry.isBoughtPrep ? " (готовое)" : "");
-            if (entry.isBoughtPrep) {
-                name.style.cursor = "pointer";
-                name.title = "Открыть карточку рецепта";
-                name.onclick = () => openDrawer(entry.recipeId);
-            }
+            name.style.cursor = "pointer";
+            name.title = "Где используется";
+            name.onclick = (e) => { e.stopPropagation(); openSourcesModal(entry); };
             row.appendChild(name);
 
             const qty = document.createElement("span");
@@ -1098,7 +1258,7 @@ function renderShopping() {
             cost.textContent = entry.cost !== null && entry.cost !== undefined ? formatMoney(entry.cost) : "нет цены";
             row.appendChild(cost);
 
-            group.appendChild(row);
+            item.appendChild(row);
 
             if (!entry.isBoughtPrep) {
                 const packLine = document.createElement("div");
@@ -1112,8 +1272,10 @@ function renderShopping() {
                     packLine.classList.add("warn");
                     packLine.textContent = "Нет вариантов упаковки — добавьте в Номенклатуре";
                 }
-                if (packLine.textContent || packLine.childElementCount > 0) group.appendChild(packLine);
+                if (packLine.textContent || packLine.childElementCount > 0) item.appendChild(packLine);
             }
+
+            body.appendChild(item);
         });
 
         listEl.appendChild(group);
@@ -1260,6 +1422,10 @@ function renderPrepTree(container, recipeId, requiredQty, requiredUnit, level, p
 // ---- Вкладка "Заготовки" ----
 
 async function updatePrepState(recipeId, patch) {
+    // Без manual_qty в дефолте: пока в БД не накатана миграция db/schema_prep_manual_qty.sql,
+    // добавляющая этот столбец, апсерт с неизвестным ключом полностью провалился бы — сломав
+    // заодно и is_checked/buy_ready/container_size, которые уже работают в проде. Столбец
+    // попадёт в запрос, только если он реально пришёл в patch или уже был в загруженной строке.
     const current = prepStateMap[recipeId] || { container_size: null, is_checked: false, expand_nested: false, buy_ready: false };
     const next = { ...current, ...patch };
     prepStateMap[recipeId] = next;
@@ -1304,14 +1470,14 @@ function renderPreps() {
     });
 
     sorted.forEach((p) => {
-        const state = prepStateMap[p.recipeId] || { container_size: null, is_checked: false, expand_nested: false, buy_ready: false };
+        const state = prepStateMap[p.recipeId] || { container_size: null, is_checked: false, expand_nested: false, buy_ready: false, manual_qty: null };
         const card = document.createElement("div");
         card.className = "ev-prep-card" + (state.is_checked ? " checked" : "");
         card.dataset.recipeId = p.recipeId;
 
         const head = document.createElement("div");
         head.className = "ev-prep-head";
-        const checkBtn = createCheckButton(!!state.is_checked, false, async (v) => { await updatePrepState(p.recipeId, { is_checked: v }); refreshAfterChange(); });
+        const checkBtn = createCheckButton(!!state.is_checked, false, (v) => { updatePrepState(p.recipeId, { is_checked: v }); refreshAfterChange(); });
         checkBtn.title = p.buyReady ? "Отметить как купленное" : "Отметить как приготовленное";
         head.appendChild(checkBtn);
 
@@ -1330,13 +1496,20 @@ function renderPreps() {
         } else {
             qty.textContent = `нужно ${formatQty(p.neededQty, p.unit)} (×${formatNum(p.coefficient)})`;
         }
+        if (p.isManualOverride) {
+            const hand = document.createElement("span");
+            hand.className = "ev-hand-icon";
+            hand.title = `Задано вручную — по расчёту ${formatQty(p.naturalQty, p.unit)}`;
+            hand.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 13V6.5a1.5 1.5 0 0 1 3 0V12M11 12V5a1.5 1.5 0 0 1 3 0v7M14 12.2V6.5a1.5 1.5 0 0 1 3 0V13M8 13l-1.5-1.4a1.4 1.4 0 0 0-2 2L8.5 18a5 5 0 0 0 4 2h1a5.5 5.5 0 0 0 5.5-5.5V9.5a1.5 1.5 0 0 0-3 0"/></svg>';
+            qty.appendChild(hand);
+        }
         head.appendChild(qty);
         card.appendChild(head);
 
         if (!state.is_checked) {
             const buyRow = document.createElement("div");
             buyRow.className = "ev-switch-row";
-            buyRow.appendChild(createSwitch(!!state.buy_ready, async (v) => { await updatePrepState(p.recipeId, { buy_ready: v }); refreshAfterChange(); }));
+            buyRow.appendChild(createSwitch(!!state.buy_ready, (v) => { updatePrepState(p.recipeId, { buy_ready: v }); refreshAfterChange(); }));
             buyRow.appendChild(document.createTextNode("Купить готовое вместо приготовления"));
             card.appendChild(buyRow);
 
@@ -1345,6 +1518,35 @@ function renderPreps() {
                 hint.className = "ev-prep-hint";
                 hint.append("Цена не посчитана — заполните закупочную упаковку и цену в карточке рецепта, ", Object.assign(document.createElement("a"), { href: "recipes.html?edit=" + encodeURIComponent(p.recipeId), target: "_blank", textContent: "открыть карточку" }));
                 card.appendChild(hint);
+            }
+
+            const manualRow = document.createElement("div");
+            manualRow.className = "ev-switch-row";
+            manualRow.appendChild(createSwitch(!!state.manual_qty, (v) => {
+                updatePrepState(p.recipeId, { manual_qty: v ? (p.naturalQty || 0) : null });
+                refreshAfterChange();
+            }));
+            manualRow.appendChild(document.createTextNode("Задать нужное количество вручную"));
+            card.appendChild(manualRow);
+
+            if (state.manual_qty !== null && state.manual_qty !== undefined) {
+                const manualField = document.createElement("div");
+                manualField.className = "form-field";
+                const manualLabel = document.createElement("label");
+                manualLabel.textContent = `Нужно, ${p.unit || ""}`;
+                manualField.appendChild(manualLabel);
+                const manualInput = document.createElement("input");
+                manualInput.type = "text";
+                manualInput.inputMode = "decimal";
+                manualInput.value = state.manual_qty;
+                manualInput.placeholder = `по расчёту: ${formatNum(p.naturalQty)}`;
+                manualInput.onchange = () => {
+                    const v = Number(String(manualInput.value).replace(",", "."));
+                    updatePrepState(p.recipeId, { manual_qty: v >= 0 ? v : p.naturalQty });
+                    refreshAfterChange();
+                };
+                manualField.appendChild(manualInput);
+                card.appendChild(manualField);
             }
         }
 
@@ -1369,9 +1571,9 @@ function renderPreps() {
                 taraInput.inputMode = "decimal";
                 taraInput.value = state.container_size ?? "";
                 taraInput.placeholder = "напр. 500";
-                taraInput.onchange = async () => {
+                taraInput.onchange = () => {
                     const v = Number(String(taraInput.value).replace(",", "."));
-                    await updatePrepState(p.recipeId, { container_size: v > 0 ? v : null });
+                    updatePrepState(p.recipeId, { container_size: v > 0 ? v : null });
                     renderPreps();
                 };
                 taraField.appendChild(taraInput);
@@ -1389,7 +1591,7 @@ function renderPreps() {
             expandBtn.type = "button";
             expandBtn.className = "ev-expand-toggle";
             expandBtn.textContent = (state.expand_nested ? "▾ " : "▸ ") + "раскрыть вложенные заготовки";
-            expandBtn.onclick = async () => { await updatePrepState(p.recipeId, { expand_nested: !state.expand_nested }); renderPreps(); };
+            expandBtn.onclick = () => { updatePrepState(p.recipeId, { expand_nested: !state.expand_nested }); renderPreps(); };
             body.appendChild(expandBtn);
 
             card.appendChild(body);

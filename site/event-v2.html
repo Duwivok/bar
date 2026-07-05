@@ -56,7 +56,6 @@
                     <div class="ev-meta" id="evMeta"></div>
                 </div>
                 <div class="ev-header-actions">
-                <span id="versionToggleSlot"></span>
                 <div id="recipePicker" class="bc-calc-picker ev-add-picker">
                     <button id="recipePickerBtn" class="bc-primary-link" type="button" aria-haspopup="listbox" aria-expanded="false">+ добавить в меню</button>
                     <div id="recipePickerPopup" class="bc-calc-picker-popup hidden">
@@ -83,7 +82,7 @@
             <div class="ev-tab active" data-tab="menu">
                 <div class="ev-menu-toolbar">
                     <input type="search" id="menuSearchInput" class="bc-search" placeholder="поиск по меню…" autocomplete="off">
-                    <div class="bc-chips" id="menuFilterChips"></div>
+                    <div id="menuTypeFilter"></div>
                     <div class="bc-chips" id="menuSortChips"></div>
                 </div>
                 <div class="ev-table-head"><span>№</span><span>рецепт</span><span>порции</span><span>нужно</span></div>
@@ -128,6 +127,16 @@
                 <span>FUCK SCREENSHOTS</span>
                 <span>FUCK CALCULATIONS</span>
                 <span>FUCK GUIDES</span>
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
             </div>
         </div>
     </main>
@@ -159,11 +168,11 @@
             </button>
         </div>
         <div class="form-grid">
-            <div class="form-field span-2"><label>Название</label><input id="editEvName" type="text"></div>
-            <div class="form-field"><label>Дата</label><input id="editEvDate" type="date"></div>
-            <div class="form-field"><label>Гостей</label><input id="editEvGuests" type="text" inputmode="numeric"></div>
-            <div class="form-field span-2"><label>Плановый бюджет, ₽</label><input id="editEvBudget" type="text" inputmode="decimal"></div>
-            <div class="form-field span-2"><label>Комментарий</label><input id="editEvComment" type="text"></div>
+            <div class="bc-field span-2"><label>Название</label><input id="editEvName" type="text"></div>
+            <div class="bc-field"><label>Дата</label><input id="editEvDate" type="date"></div>
+            <div class="bc-field"><label>Гостей</label><input id="editEvGuests" type="text" inputmode="numeric"></div>
+            <div class="bc-field span-2"><label>Плановый бюджет, ₽</label><input id="editEvBudget" type="text" inputmode="decimal"></div>
+            <div class="bc-field span-2"><label>Комментарий</label><input id="editEvComment" type="text"></div>
         </div>
         <button type="button" class="bc-primary-link ev-modal-submit" id="eventEditSaveBtn">Сохранить</button>
     </div>
@@ -180,6 +189,19 @@
     </div>
 </div>
 
+<!-- Где используется сырьё/заготовка (клик по позиции в "Закупке") -->
+<div id="sourcesOverlay" class="ev-modal-overlay hidden">
+    <div class="ev-modal-box">
+        <div class="ev-modal-head">
+            <h3 id="sourcesTitle">Где используется</h3>
+            <button type="button" class="bc-icon-btn" id="sourcesCloseBtn" title="Закрыть" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+        <div id="sourcesList" class="drawer-list"></div>
+    </div>
+</div>
+
 <datalist id="unitOptionsList"></datalist>
 <datalist id="categoryOptionsList"></datalist>
 
@@ -188,7 +210,7 @@
 <script src="js/version-toggle.js"></script>
 <script src="js/constants.js"></script>
 <script src="js/format.js"></script>
-<script src="js/event-calc.js"></script>
+<script src="js/event-calc-v2.js"></script>
 <script src="js/event-v2.js"></script>
 <script>
 if ('serviceWorker' in navigator) {

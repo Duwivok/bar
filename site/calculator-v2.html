@@ -43,9 +43,19 @@
                             <span>выберите рецепт</span>
                         </button>
                         <div id="recipePickerPopup" class="bc-calc-picker-popup hidden">
-                            <input id="recipeSearchInput" class="bc-calc-picker-search" type="search" placeholder="поиск рецепта" autocomplete="off">
+                            <div class="bc-calc-picker-search-row">
+                                <input id="recipeSearchInput" class="bc-calc-picker-search" type="search" placeholder="поиск рецепта" autocomplete="off">
+                                <button type="button" id="recipePickerCloseBtn" class="bc-calc-picker-close" aria-label="Закрыть">×</button>
+                            </div>
                             <select id="recipePickerSpirit" class="bc-calc-picker-spirit" aria-label="основной алкоголь"></select>
-                            <div id="recipePickerFilters" class="bc-calc-picker-filters"></div>
+                            <select id="recipePickerFilters" class="bc-calc-picker-spirit" aria-label="тип рецепта">
+                                <option value="all">все</option>
+                                <option value="cocktail">коктейли</option>
+                                <option value="shot">шоты</option>
+                                <option value="prep">заготовки</option>
+                                <option value="infusion">настойки</option>
+                                <option value="custom">кастом</option>
+                            </select>
                             <div id="recipePickerSorts" class="bc-calc-picker-sorts"></div>
                             <div id="recipePickerList" class="bc-calc-picker-list" role="listbox"></div>
                         </div>
