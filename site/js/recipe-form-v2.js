@@ -1106,6 +1106,10 @@
 
     document.getElementById("newRecipeBtn").onclick = openForNew;
 
+    // Быстрое добавление с главной (index-v2.html?new=1 -> recipes-v2.html?new=1) —
+    // сразу открывает форму нового рецепта, не требуя лишнего клика.
+    if (new URLSearchParams(location.search).get("new") === "1") openForNew();
+
     function interceptEditLink(link) {
         if (!link) return;
         link.addEventListener("click", (event) => {

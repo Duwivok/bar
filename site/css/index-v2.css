@@ -1,0 +1,427 @@
+/* Стили только для index-v2.html (главная). Не подключается больше нигде. */
+
+.hm-stats-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 8px;
+}
+
+.hm-stat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-decoration: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.hm-stat-card:hover {
+    border-color: rgba(255, 103, 43, 0.55);
+    background: rgba(255, 103, 43, 0.06);
+}
+
+.hm-stat-number {
+    font-family: "Unbounded", sans-serif;
+    font-size: 40px;
+    color: var(--orange);
+    line-height: 1.1;
+}
+
+.hm-stat-label {
+    color: var(--text);
+    font-size: 14px;
+}
+
+.hm-stat-breakdown {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.hm-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.hm-chip {
+    color: var(--muted-2);
+}
+
+/* ---- Недавняя активность / Ближайшие события — две широкие карточки под статистикой ---- */
+
+.hm-wide-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.hm-wide-card h4 {
+    margin: 0 0 10px;
+}
+
+.hm-recent-list,
+.hm-upcoming-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.hm-recent-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-height: 34px;
+    padding: 4px 6px;
+    margin: 0 -6px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.hm-recent-row:hover {
+    background: rgba(255, 103, 43, 0.08);
+}
+
+.hm-recent-kind {
+    flex: 0 0 auto;
+    color: var(--muted-2);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    min-width: 62px;
+}
+
+.hm-recent-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text);
+}
+
+.hm-recent-time {
+    flex: 0 0 auto;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.hm-upcoming-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 38px;
+    padding: 6px;
+    margin: 0 -6px;
+    border-radius: 8px;
+    text-decoration: none;
+}
+
+.hm-upcoming-row:hover {
+    background: rgba(255, 103, 43, 0.08);
+}
+
+.hm-upcoming-date {
+    flex: 0 0 auto;
+    color: var(--orange);
+    font-size: 12px;
+    min-width: 68px;
+}
+
+.hm-upcoming-name {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.hm-upcoming-name strong {
+    font-weight: 500;
+    color: var(--text);
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hm-upcoming-meta {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* ---- Шапка: "+ добавить" и "Проблемы: N" — попапы на базе .bc-filter/.bc-filter-popup ---- */
+
+.hm-quickadd,
+.hm-issues {
+    position: relative;
+}
+
+.hm-quickadd-trigger {
+    width: auto;
+}
+
+/* position:fixed + left/top выставляются в JS (setupPopup -> reposition) по реальным
+   координатам своей кнопки-триггера — так поповер не наезжает на соседей в шапке,
+   даже когда bc-header-actions переносит кнопки на новую строку (flex-wrap). */
+.hm-quickadd .bc-filter-popup,
+.hm-issues .bc-filter-popup {
+    position: fixed;
+    left: 0;
+    right: auto;
+    top: 0;
+    z-index: 1000;
+}
+
+.hm-quickadd-link {
+    display: flex;
+    align-items: center;
+    min-height: 34px;
+    border-radius: 10px;
+    padding: 0 10px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.hm-quickadd-link:hover {
+    background: rgba(255, 103, 43, 0.12);
+    color: var(--orange);
+}
+
+.hm-issues-trigger {
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(82, 210, 115, 0.4);
+    background: rgba(82, 210, 115, 0.08);
+    color: var(--green);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.hm-issues-trigger.hm-has-issues {
+    border-color: rgba(255, 59, 48, 0.45);
+    background: rgba(255, 59, 48, 0.1);
+    color: #ff8f87;
+}
+
+.hm-issues-popup {
+    width: min(360px, 86vw);
+}
+
+.hm-issues-empty {
+    padding: 18px 10px;
+    text-align: left;
+    font-size: 13px;
+}
+
+.hm-issue-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 40px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.hm-issue-row:hover {
+    background: rgba(255, 103, 43, 0.12);
+}
+
+.hm-issue-fix {
+    flex: 0 0 auto;
+    color: var(--orange);
+    font-size: 12px;
+}
+
+/* ---- Боковая карточка ближайшего мероприятия (bc-detail-pane) ---- */
+
+.hm-side h2 {
+    margin: 4px 0 10px;
+    font-family: "Unbounded", sans-serif;
+    font-size: 20px;
+}
+
+.hm-side-meta {
+    margin-bottom: 6px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.hm-side-countdown {
+    display: inline-block;
+    margin-bottom: 14px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 103, 43, 0.35);
+    color: var(--orange);
+    font-size: 12px;
+}
+
+.hm-side-comment {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 13px;
+    color: var(--text);
+}
+
+.hm-side-section {
+    margin-bottom: 20px;
+}
+
+.hm-side-progress {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.hm-side-breakdown {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.hm-side-cost {
+    margin-top: 8px;
+    font-weight: 700;
+    color: var(--orange);
+}
+
+.hm-side-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hm-progress-row {
+    display: block;
+    margin-bottom: 14px;
+    text-decoration: none;
+}
+
+.hm-progress-row:last-child {
+    margin-bottom: 0;
+}
+
+.hm-progress-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: var(--text);
+}
+
+.hm-progress-count {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.hm-progress-track {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+.hm-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--orange);
+    transition: width 0.2s ease;
+}
+
+.hm-progress-fill.done {
+    background: var(--green);
+}
+
+/* .bc-primary-link/.bc-button-link центрируют текст через align-items/justify-content
+   на inline-flex (см. styles-v2.css) — если тут переопределить на display:block, тот
+   flex-центрирующий css перестаёт действовать, и текст (особенно по вертикали) съезжает.
+   Поэтому остаёмся на flex, просто растягиваем на всю ширину блока. */
+.hm-side-open-btn,
+.hm-side-actions .bc-button-link {
+    display: flex;
+    width: 100%;
+    text-decoration: none;
+}
+
+.hm-side-empty {
+    padding: 0 0 16px;
+    text-align: left;
+    font-size: 13px;
+}
+
+@media (max-width: 1080px) {
+    .hm-stats-row,
+    .hm-wide-row {
+        grid-template-columns: 1fr;
+    }
+
+    .hm-quickadd .bc-filter-popup,
+    .hm-issues .bc-filter-popup {
+        right: 0;
+        left: auto;
+    }
+
+    /* Мобильная сборка главной — сокращённая и с другим приоритетом, чем десктоп:
+       1) ближайшее мероприятие — самое важное, сразу под шапкой;
+       2) только два счётчика (рецепты/номенклатура), без чипов;
+       3) "Недавняя активность"/"Ближайшие события" скрыты — на маленьком экране это
+          уже второстепенная информация, отдельные разделы показывают её подробнее.
+       Десктопную grid-раскладку (.bc-list-pane/.bc-detail-pane бок о бок) это не трогает —
+       всё ниже только внутри этого мобильного медиа-запроса.
+
+       .bc-list-pane сам по себе ничего не рисует (только группирует секции) — display:contents
+       убирает его бокс и поднимает header/status/hm-stats-row на один уровень с
+       .bc-detail-pane, чтобы всех их вместе можно было переставить через order. */
+    .bc-list-pane {
+        display: contents;
+    }
+
+    /* display:contents убирает не только бокс .bc-list-pane, но и его собственные
+       padding: 22px 16px 14px (styles-v2.css) — тот самый боковой отступ от края экрана
+       на мобильном. Раз бокса больше нет, отступ нужно вернуть каждому "осиротевшему"
+       ребёнку по отдельности (те же 16px по бокам, 22px сверху у первого — как было). */
+    .bc-header {
+        order: 1;
+        padding-left: 16px;
+        padding-right: 16px;
+        margin-top: 22px;
+    }
+
+    #status {
+        order: 2;
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .bc-detail-pane.hm-side {
+        order: 3;
+        display: block;
+        border-left: 0;
+        border-top: 1px solid var(--line);
+        padding: 20px 16px;
+    }
+
+    .hm-stats-row {
+        order: 4;
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-bottom: 14px;
+    }
+
+    .hm-wide-row,
+    .hm-chip-row {
+        display: none;
+    }
+}

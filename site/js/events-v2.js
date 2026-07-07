@@ -259,12 +259,28 @@ document.getElementById("fSaveBtn").onclick = async () => {
     window.location.href = "event-v2.html?id=" + inserted.id;
 };
 
+// Глазик переключения версии — рядом с "+ новое событие", а не в углу экрана (см. тот же
+// приём на event-v2.html: position:sticky держит его на месте при скролле, но в потоке
+// разметки он стоит вплотную к кнопке).
+function setupInlineVersionToggle() {
+    const btn = document.getElementById("versionToggleBtn");
+    const actions = document.querySelector(".bc-header-actions");
+    if (!btn || !actions) return;
+    actions.appendChild(btn);
+    btn.classList.add("ev-inline-toggle");
+}
+
 async function init() {
+    setupInlineVersionToggle();
     if (!isDbConfigured()) {
         showStatus(statusEl, "База данных не подключена", "error");
         return;
     }
     await loadEvents();
+
+    // Быстрое добавление с главной (index-v2.html?new=1 -> events-v2.html?new=1) —
+    // сразу открывает форму нового мероприятия, не требуя лишнего клика.
+    if (new URLSearchParams(location.search).get("new") === "1") openAddModal();
 }
 
 init();

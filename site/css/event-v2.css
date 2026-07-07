@@ -683,6 +683,13 @@
     color: var(--red);
 }
 
+.ev-purchase-totals {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+}
+
 /* ---- Вкладка "Заготовки" ---- */
 
 .ev-prep-card {
@@ -936,11 +943,17 @@
 
     .ev-manual-bar {
         justify-content: space-between;
+        flex-wrap: wrap;
     }
 
     .ev-manual-bar .bc-button-link {
-        flex: 1 1 0;
+        flex: 1 1 auto;
+        min-width: 0;
+        padding: 0 10px;
+        font-size: 12.5px;
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 }
 

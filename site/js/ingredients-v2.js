@@ -962,7 +962,7 @@ function createMultiFilter(root, label, onChange, iconSvg, shortLabel) {
         filter.search = "";
         search.value = "";
         renderOptions();
-        if (isOpen) search.focus();
+        if (isOpen) { positionFilterPopup(trigger, popup); search.focus(); }
     };
 
     clearBtn.onclick = (event) => { event.stopPropagation(); filter.value = []; close(); renderOptions(); onChange(filter.value); };
@@ -1027,6 +1027,7 @@ function createSortFilter(root, label, options, initialValue, onChange, iconSvg)
         root.classList.toggle("open", isOpen);
         filterOverlay.classList.toggle("hidden", !isOpen);
         renderOptions();
+        if (isOpen) positionFilterPopup(trigger, popup);
     };
 
     renderOptions();
@@ -1096,6 +1097,7 @@ function createEventFilter(root, label, onChange, iconSvg) {
         root.classList.toggle("open", isOpen);
         filterOverlay.classList.toggle("hidden", !isOpen);
         renderOptions();
+        if (isOpen) positionFilterPopup(trigger, popup);
     };
 
     filter.setOptions = (options) => {
@@ -1709,9 +1711,13 @@ if (ingredientsStickyEl) {
     const updateCompact = () => {
         compactRaf = null;
         const scrolled = window.scrollY || document.documentElement.scrollTop || 0;
+        const wasCompact = isCompact;
         if (!isCompact && scrolled > 40) isCompact = true;
         else if (isCompact && scrolled < 16) isCompact = false;
         ingredientsStickyEl.classList.toggle("compact", isCompact);
+        // Компакт-режим меняет раскладку сегментов (grid -> inline-flex) — без
+        // пересчёта скользящий "thumb" остаётся на координатах старой раскладки.
+        if (isCompact !== wasCompact) setStatusThumb();
     };
     window.addEventListener("scroll", () => {
         if (compactRaf === null) compactRaf = requestAnimationFrame(updateCompact);
@@ -1719,6 +1725,10 @@ if (ingredientsStickyEl) {
 }
 
 document.getElementById("addRowBtn").onclick = openIngredientFormNew;
+
+// Быстрое добавление с главной (index-v2.html?new=1 -> ingredients-v2.html?new=1) —
+// сразу открывает форму новой позиции, не требуя лишнего клика.
+if (new URLSearchParams(location.search).get("new") === "1") openIngredientFormNew();
 document.getElementById("searchInput").oninput = (e) => { searchQuery = e.target.value.trim().toLowerCase(); renderList(); };
 
 document.getElementById("closeDrawerBtn").onclick = closeDrawer;

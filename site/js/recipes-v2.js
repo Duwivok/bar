@@ -269,7 +269,7 @@ function createFilter(root, label, onChange, iconSvg) {
         filter.search = "";
         search.value = "";
         renderOptions();
-        if (isOpen) search.focus();
+        if (isOpen) { positionFilterPopup(trigger, popup); search.focus(); }
     };
 
     clearBtn.onclick = (event) => {
@@ -771,10 +771,24 @@ state.filters.ingredient = createFilter(els.ingredientFilter, "состав", (v
 }, FILTER_ICONS.ingredient);
 
 
+const searchClearBtn = document.getElementById("searchClearBtn");
+function updateSearchClearVisibility() {
+    if (searchClearBtn) searchClearBtn.classList.toggle("hidden", !els.search.value);
+}
 els.search.oninput = () => {
     state.search = els.search.value;
+    updateSearchClearVisibility();
     render();
 };
+if (searchClearBtn) {
+    searchClearBtn.onclick = () => {
+        els.search.value = "";
+        state.search = "";
+        updateSearchClearVisibility();
+        render();
+        els.search.focus();
+    };
+}
 
 const modeButtons = [...els.modeTabs.querySelectorAll("button")];
 const modeThumb = els.modeTabs.querySelector(".bc-segmented-thumb");
@@ -809,11 +823,12 @@ if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(() => setModeThumb());
 }
 
-// На мобильном панель режимов/фильтров сжимается при прокрутке списка рецептов, чтобы
-// не отъедать весь экран, но остаётся на месте (sticky), а не пропадает. Отдельные
-// круглые кнопки фильтров/поиска разворачиваются каждая сама по себе при нажатии
-// (см. createFilter и фокус на .bc-search); наведение курсором временно возвращает
-// всю панель в полный размер (см. CSS :hover).
+// Панель режимов/фильтров на мобильном (≤1080px) сверху страницы развёрнута (как на
+// десктопе), а при скролле сжимается в кружки — как у "Сырья" (см. #recipesSticky.compact
+// в styles-v2.css). На десктопе панель всегда остаётся развёрнутой и просто прилипает
+// к верху (position:sticky) — компактный режим там не применяется вовсе.
+const RECIPES_MOBILE_QUERY = window.matchMedia("(max-width: 1080px)");
+
 if (els.sticky) {
     // rAF-throttling + гистерезис (разные пороги входа/выхода) убирают дёрганье
     // от частых scroll-событий и переключения класса туда-обратно на границе.
@@ -821,14 +836,24 @@ if (els.sticky) {
     let isCompact = false;
     const updateCompact = () => {
         compactRaf = null;
+        if (!RECIPES_MOBILE_QUERY.matches) {
+            if (isCompact) { isCompact = false; els.sticky.classList.remove("compact"); setModeThumb(); }
+            return;
+        }
         const scrolled = window.scrollY || document.documentElement.scrollTop || 0;
+        const wasCompact = isCompact;
         if (!isCompact && scrolled > 40) isCompact = true;
         else if (isCompact && scrolled < 16) isCompact = false;
         els.sticky.classList.toggle("compact", isCompact);
+        // Сжатый режим сужает пузырь переключателя (см. #recipesSticky.compact
+        // .bc-segmented в styles-v2.css) — бегунок нужно пересчитать под новый размер.
+        if (isCompact !== wasCompact) setModeThumb();
     };
-    window.addEventListener("scroll", () => {
+    const onScroll = () => {
         if (compactRaf === null) compactRaf = requestAnimationFrame(updateCompact);
-    }, { passive: true });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    RECIPES_MOBILE_QUERY.addEventListener("change", updateCompact);
 }
 
 loadAll();

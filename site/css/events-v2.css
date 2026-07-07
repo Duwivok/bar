@@ -1,5 +1,16 @@
 /* Стили только для events-v2.html (список мероприятий). Не подключается больше нигде. */
 
+/* Глазик переключения версии, перенесённый из угла экрана в шапку рядом с "+ новое
+   событие" (см. setupInlineVersionToggle в events-v2.js) — sticky вместо fixed, чтобы
+   при скролле списка он оставался на месте, а не наезжал поверх контента. */
+#versionToggleBtn.ev-inline-toggle {
+    position: sticky;
+    top: 14px;
+    right: auto;
+    left: auto;
+    flex: 0 0 auto;
+}
+
 #eventGrid {
     display: flex;
     flex-direction: column;

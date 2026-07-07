@@ -159,9 +159,9 @@ a {
 
 .bc-recipes-header-actions {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
 }
 
 .bc-recipes-header-actions .bc-primary-link {
@@ -342,6 +342,20 @@ button:disabled {
     min-width: 0;
 }
 
+/* Обёртка нужна только затем, чтобы разместить кнопку очистки внутри поля — сама
+   она невидима для раскладки и полностью повторяет размеры/поведение .bc-search
+   на всех брейкпоинтах (см. парные правила ниже, начиная с .bc-toolbar .bc-search). */
+.bc-toolbar .bc-search-wrap {
+    flex: 2 1 200px;
+    min-width: 0;
+    position: relative;
+}
+
+.bc-search-wrap .bc-search {
+    width: 100%;
+    height: 100%;
+}
+
 .bc-search {
     min-height: 38px;
     min-width: 0;
@@ -352,8 +366,61 @@ button:disabled {
     padding: 0 12px;
 }
 
+.bc-search-wrap .bc-search {
+    padding-right: 32px;
+}
+
 .bc-search::placeholder {
     color: var(--muted-2);
+}
+
+.bc-search-clear-btn {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 22px;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1;
+}
+
+.bc-search-clear-btn:hover {
+    background: rgba(255, 103, 43, 0.18);
+    color: var(--orange);
+}
+
+.bc-search-clear-btn.hidden {
+    display: none;
+}
+
+/* В свёрнутом (кружком) виде поля поиска крестику очистки негде поместиться —
+   там и так видна только лупа; появляется вместе с текстом при разворачивании.
+   Кружок бывает и в .compact (после скролла), и по умолчанию на мобильном — оба сразу. */
+.bc-recipes-sticky.compact .bc-search-wrap:not(:focus-within) .bc-search-clear-btn {
+    display: none;
+}
+
+@media (max-width: 1080px) {
+    .bc-search-wrap:not(:focus-within) .bc-search-clear-btn {
+        display: none;
+    }
+}
+
+/* Родной крестик очистки у input[type=search] в каждом браузере/теме выглядит по-своему
+   (например, синий "х" вместо стиля сайта) — до сих пор он был спрятан только в пикере
+   рецептов (.bc-calc-picker-search), а в остальных полях поиска (.bc-search, .bc-filter-search)
+   вылезал непоследовательно. Прячем везде одинаково. */
+.bc-search::-webkit-search-cancel-button,
+.bc-filter-search::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    display: none;
 }
 
 .bc-filter {
@@ -438,7 +505,10 @@ button:disabled {
     position: fixed;
     inset: 0;
     z-index: 9;
-    background: transparent;
+    /* Раньше подложка была полностью прозрачной — попап фильтра/пикера визуально
+       сливался со страницей под ним. Лёгкий тёмный скрим явно показывает, что
+       попап "поверх" страницы, а не часть общего фона. */
+    background: rgba(6, 5, 4, 0.45);
 }
 
 .bc-filter-overlay.hidden {
@@ -454,10 +524,10 @@ button:disabled {
     max-height: 310px;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    border: 1px solid var(--line);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: var(--radius);
     background: #120f0d;
-    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.36);
+    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.55);
     overflow: hidden;
 }
 
@@ -1877,11 +1947,14 @@ html.drawer-open body {
         padding-right: 13px;
     }
 
-    .bc-recipes-sticky.compact .bc-search {
+    .bc-recipes-sticky.compact .bc-search-wrap {
         flex: 0 0 auto;
         grid-column: auto;
         width: 36px;
         min-height: 36px;
+    }
+
+    .bc-recipes-sticky.compact .bc-search {
         padding: 0;
         border-radius: 999px;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2382776d' stroke-width='1.8'%3E%3Ccircle cx='10' cy='10' r='6'/%3E%3Cpath d='M20 20l-5-5'/%3E%3C/svg%3E");
@@ -1894,10 +1967,13 @@ html.drawer-open body {
         color: transparent;
     }
 
-    .bc-recipes-sticky.compact .bc-search:focus {
+    .bc-recipes-sticky.compact .bc-search-wrap:focus-within {
         flex: 1 1 auto;
         width: auto;
-        padding: 0 14px;
+    }
+
+    .bc-recipes-sticky.compact .bc-search:focus {
+        padding: 0 30px 0 14px;
         background-image: none;
         color: var(--text);
     }
@@ -1912,7 +1988,8 @@ html.drawer-open body {
         gap: 6px;
     }
 
-    .bc-toolbar .bc-search {
+    .bc-toolbar .bc-search,
+    .bc-toolbar .bc-search-wrap {
         grid-column: 1 / -1;
     }
 
@@ -1922,13 +1999,15 @@ html.drawer-open body {
     }
 
     .bc-filter-popup {
+        /* Позиция (position/top/bottom/max-height) считается в JS (js/filter-popup.js)
+           от реального положения кнопки-триггера в момент открытия — так попап всегда
+           открывается рядом со своей кнопкой, не перекрывая соседние, и не прячется под
+           клавиатурой. Тут только запасные значения на случай, если JS ещё не отработал. */
         position: fixed;
         left: 12px;
         right: 12px;
-        top: auto;
-        bottom: calc(58px + 30px + 12px + env(safe-area-inset-bottom, 0px));
+        top: 74px;
         width: auto;
-        max-height: 50vh;
         z-index: 31;
     }
 
@@ -2362,10 +2441,10 @@ th {
     left: 0;
     right: 0;
     padding: 10px;
-    border: 1px solid var(--line);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 10px;
     background: #090706;
-    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.52);
+    box-shadow: 0 26px 64px rgba(0, 0, 0, 0.6);
 }
 
 .bc-calc-picker-search-row {
@@ -2886,22 +2965,12 @@ th {
     background: var(--orange);
 }
 
-/* Капельки для миллилитров, кубики для граммов — грамм на этой шкале приравнен
-   к миллилитру (см. shareBasis в calculator-v2.js), меняется только узор заливки. */
-.bc-calc-share.kind-ml i {
-    background-color: transparent;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23ff672b' d='M8 1.5c1.6 2.6 4.5 6.7 4.5 9.3a4.5 4.5 0 0 1-9 0C3.5 8.2 6.4 4.1 8 1.5Z'/%3E%3C/svg%3E");
-    background-repeat: repeat-x;
-    background-position: center;
-    background-size: 13px 10px;
-}
-
+/* Жидкости (мл) — сплошная заливка (см. базовый .bc-calc-share i выше). Сухие/штучные
+   (г) — диагональная штриховка тем же цветом; грамм на этой шкале приравнен к
+   миллилитру (см. shareBasis в calculator-v2.js), меняется только узор заливки. */
 .bc-calc-share.kind-g i {
-    background-color: transparent;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2.5' y='2.5' width='11' height='11' rx='1.5' fill='%23ff672b'/%3E%3Cpath d='M2.5 6h11M6 2.5v11' stroke='rgba(9,8,7,.35)' stroke-width='1'/%3E%3C/svg%3E");
-    background-repeat: repeat-x;
-    background-position: center;
-    background-size: 13px 10px;
+    background-color: rgba(255, 103, 43, 0.35);
+    background-image: repeating-linear-gradient(45deg, var(--orange) 0 4px, rgba(255, 103, 43, 0.35) 4px 8px);
 }
 
 .bc-calc-share.kind-unknown {
@@ -3074,7 +3143,7 @@ th {
         gap: 10px;
     }
 
-    .bc-calc-share {
+    .bc-calc-share-cell {
         width: 146px;
     }
 
@@ -3189,7 +3258,7 @@ th {
 
     .bc-calc-table-head {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 74px 92px;
+        grid-template-columns: minmax(0, 1fr) 60px 108px;
         gap: 8px;
         padding-right: 0;
         font-size: 9px;
@@ -3226,7 +3295,7 @@ th {
     }
 
     .bc-calc-row {
-        grid-template-columns: minmax(0, 1fr) 74px 92px;
+        grid-template-columns: minmax(0, 1fr) 60px 108px;
         grid-template-areas:
             "name base target"
             "name share share";
@@ -3255,14 +3324,22 @@ th {
         grid-area: target;
         text-align: right;
         font-size: 14px;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        line-height: 1.15;
+        word-break: break-word;
     }
 
-    .bc-calc-share {
+    .bc-calc-share-cell {
         grid-area: share;
         width: 100%;
         min-width: 0;
-        height: 6px;
         align-self: start;
+    }
+
+    .bc-calc-share {
+        height: 13px;
     }
 
     .bc-calc-summary {
@@ -3895,6 +3972,42 @@ th {
    верх страницы на мобильном) у нас 3 фильтра + поиск — сокращаем базовую ширину
    пилюль, чтобы подписи не обрезались и не уводили поиск на отдельную строку. */
 
+/* При скролле (.compact) плашка под сжатыми фильтрами/поиском и переключателем
+   вкладок должна быть прозрачной, а не сплошным фоном var(--bg) — но сами пилюли
+   (сегменты, фильтры, поиск) без общей подложки почти не видны на фоне страницы,
+   поэтому у них своя, более заметная подложка. Весь ряд при этом прижимаем вправо
+   (раньше сжатые кружки сиротливо жались к левому краю, оставляя пустоту справа). */
+#ingredientsSticky.compact {
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+/* Пузырь переключателя подгоняем под общую длину и высоту ряда из 4 сжатых
+   кнопок под ним (3 фильтра + поиск по 36px + 3 промежутка по 8px = 168px). */
+#ingredientsSticky.compact .bc-segmented {
+    width: 168px;
+    height: 36px;
+    min-height: 36px;
+    padding: 3px;
+    margin-bottom: 4px;
+}
+
+#ingredientsSticky.compact .bc-toolbar {
+    margin-top: 0;
+}
+
+#ingredientsSticky.compact .bc-segmented,
+#ingredientsSticky.compact .bc-filter-trigger {
+    background: rgba(255, 255, 255, 0.09);
+}
+
+#ingredientsSticky.compact .bc-search {
+    background-color: rgba(255, 255, 255, 0.09);
+}
+
+
 #ingredientsSticky:not(.compact) .bc-toolbar {
     flex-wrap: nowrap;
     gap: 6px;
@@ -3934,20 +4047,111 @@ th {
         display: flex;
     }
 
+    /* Поиск в развёрнутом (не .compact) состоянии — обычное поле, как и соседние
+       фильтры, вплоть до самого скролла; сжимается в круглую кнопку-лупу только
+       вместе с ними при появлении .compact (см. .bc-recipes-sticky.compact выше) —
+       раньше здесь было отдельное правило, схлопывающее поиск в лупу ВСЕГДА на
+       мобильном, независимо от скролла, из-за чего вверху страницы, до скролла,
+       он не совпадал по поведению с остальными фильтрами. */
     #ingredientsSticky:not(.compact) .bc-toolbar .bc-filter,
     #ingredientsSticky:not(.compact) .bc-toolbar .bc-search {
         grid-column: auto;
     }
+}
 
-    /* На мобильном поиск изначально — просто круглая кнопка-лупа (без подписи),
-       по тапу/фокусу разворачивается в поле ввода и раздвигает фильтры в сторону.
-       На десктопе поиск остаётся обычным полем. */
-    #ingredientsSticky:not(.compact) .bc-toolbar .bc-search {
+/* "Рецепты" на мобильном — сжимаются ТОЛЬКО при скролле (см. .compact в recipes-v2.js),
+   сверху страницы (пока не скроллили) остаются развёрнутыми, как на десктопе. При
+   скролле — тот же сжатый вид, что у "Сырья": кружки фильтров/поиска поверх списка,
+   узкая пилюля переключателя справа, без фона. */
+@media (max-width: 1080px) {
+    #recipesSticky.compact {
+        background: transparent;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    #recipesSticky.compact .bc-segmented {
+        width: 190px;
+        height: 36px;
+        min-height: 0;
+        padding: 2px;
+        margin-bottom: 4px;
+        background: #1a1512;
+    }
+
+    #recipesSticky.compact .bc-segmented button {
+        min-height: 24px;
+        font-size: 9px;
+        padding: 0 4px;
+    }
+
+    #recipesSticky.compact .bc-toolbar {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 0;
+    }
+
+    #recipesSticky.compact .bc-filter {
         flex: 0 0 auto;
+    }
+
+    #recipesSticky.compact .bc-filter-trigger {
         width: 36px;
-        min-width: 36px;
+        min-height: 36px;
         padding: 0;
         border-radius: 999px;
+        justify-content: center;
+        align-items: center;
+        gap: 0;
+        background: #1a1512;
+    }
+
+    #recipesSticky.compact .bc-filter-trigger::after {
+        display: none;
+    }
+
+    #recipesSticky.compact .bc-filter-icon {
+        margin: 0;
+    }
+
+    #recipesSticky.compact .bc-filter-label {
+        flex: 0 0 0;
+        width: 0;
+        margin-left: 0;
+        opacity: 0;
+    }
+
+    #recipesSticky.compact .bc-filter.open .bc-filter-trigger,
+    #recipesSticky.compact .bc-filter:hover .bc-filter-trigger {
+        width: 150px;
+        padding: 0 14px 0 10px;
+        justify-content: flex-start;
+    }
+
+    #recipesSticky.compact .bc-filter.open .bc-filter-label,
+    #recipesSticky.compact .bc-filter:hover .bc-filter-label {
+        flex: 1;
+        width: auto;
+        margin-left: 8px;
+        opacity: 1;
+    }
+
+    /* Поиск — просто круглая кнопка-лупа (без подписи), по тапу/фокусу разворачивается
+       в поле ввода и раздвигает фильтры в сторону. */
+    #recipesSticky.compact .bc-search-wrap {
+        flex: 0 0 auto;
+        grid-column: auto;
+        width: 36px;
+        min-height: 36px;
+    }
+
+    #recipesSticky.compact .bc-search {
+        padding: 0;
+        border-radius: 999px;
+        background-color: #1a1512;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2382776d' stroke-width='1.8'%3E%3Ccircle cx='10' cy='10' r='6'/%3E%3Cpath d='M20 20l-5-5'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: center;
@@ -3955,19 +4159,23 @@ th {
         transition: width 0.2s ease, padding 0.2s ease;
     }
 
-    #ingredientsSticky:not(.compact) .bc-toolbar .bc-search::placeholder {
+    #recipesSticky.compact .bc-search::placeholder {
         color: transparent;
     }
 
-    #ingredientsSticky:not(.compact) .bc-toolbar .bc-search:focus {
+    #recipesSticky.compact .bc-search-wrap:focus-within {
         flex: 1 1 auto;
         width: auto;
-        padding: 0 14px;
+    }
+
+    #recipesSticky.compact .bc-search:focus {
+        padding: 0 30px 0 14px;
         background-image: none;
         color: var(--text);
     }
 
-    #ingredientsSticky:not(.compact) .bc-toolbar .bc-search:focus::placeholder {
+    #recipesSticky.compact .bc-search:focus::placeholder {
         color: var(--muted-2);
     }
 }
+

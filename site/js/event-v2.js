@@ -18,7 +18,11 @@ let ingredientStateMap = {}; // ingredient_id -> is_checked
 let prepStateMap = {};       // recipe_id -> { container_size, is_checked, expand_nested, buy_ready }
 let manualItems = [];        // [{id, name, qty, unit, category, cost, is_checked}]
 
-let activeTab = "menu";
+// Поддерживаем ?tab=preps/shopping/issues для прямых ссылок с главной (index-v2.html) —
+// на глубокие ссылки на конкретную вкладку конкретного мероприятия.
+const VALID_TABS = ["menu", "preps", "shopping", "issues"];
+const requestedTab = new URLSearchParams(window.location.search).get("tab");
+let activeTab = VALID_TABS.includes(requestedTab) ? requestedTab : "menu";
 let pickerSearch = "";
 let pickerFilter = "all";
 let pickerSort = "name";
@@ -565,7 +569,23 @@ function renderSummary() {
     const manualCost = manualItems.reduce((sum, m) => sum + (m.cost || 0), 0);
 
     const portions = menuItems.reduce((sum, m) => sum + Number(m.qty_portions || 0), 0);
-    const cocktails = menuItems.filter((m) => Number(m.qty_portions) > 0).length;
+
+    // Раньше "коктейли" считали все позиции меню разом (включая шоты и настойки, поданные
+    // гостю напрямую) — в одной цифре терялась структура бара. Теперь считаем раздельно
+    // по виду рецепта; пустые категории (например, нет ни одного шота) не показываем.
+    let cocktailCount = 0;
+    let shotCount = 0;
+    let infusionCount = 0;
+    menuItems.forEach((m) => {
+        if (Number(m.qty_portions) <= 0) return;
+        const r = recipesById[m.recipe_id];
+        if (!r || r.is_prep) return;
+        const bucket = recipeBucket(r);
+        if (bucket === "shot") shotCount++;
+        else if (bucket === "infusion") infusionCount++;
+        else cocktailCount++;
+    });
+
     const liters = prepTotals.reduce((sum, p) => {
         if (p.unit === "л") return sum + Number(p.neededQty || 0);
         if (p.unit === "мл") return sum + Number(p.neededQty || 0) / 1000;
@@ -577,11 +597,13 @@ function renderSummary() {
     el.innerHTML = "";
     [
         [String(portions), pluralize(portions, ["порция", "порции", "порций"]), false],
-        [String(cocktails), pluralize(cocktails, ["коктейль", "коктейля", "коктейлей"]), false],
+        cocktailCount > 0 ? [String(cocktailCount), pluralize(cocktailCount, ["коктейль", "коктейля", "коктейлей"]), false] : null,
+        shotCount > 0 ? [String(shotCount), pluralize(shotCount, ["шот", "шота", "шотов"]), false] : null,
+        infusionCount > 0 ? [String(infusionCount), pluralize(infusionCount, ["настойка", "настойки", "настоек"]), false] : null,
         [`${formatNum(liters)} л`, "заготовок", false],
         [String(issuesCount), pluralize(issuesCount, ["проблема", "проблемы", "проблем"]), issuesCount > 0],
         [formatMoney(totalCost + manualCost), "стоимость", false],
-    ].forEach(([value, label, warn]) => {
+    ].filter(Boolean).forEach(([value, label, warn]) => {
         const stat = document.createElement("div");
         stat.className = "ev-stat";
         const b = document.createElement("b");
@@ -920,6 +942,7 @@ function setupMenuToolbar() {
             popup.classList.remove("hidden");
             root.classList.add("open");
             openWithOverlay(close);
+            positionFilterPopup(trigger, popup);
         } else {
             close();
         }
@@ -1075,10 +1098,14 @@ function computeIssues() {
     const { lines } = computeBudget(ingredientTotals, ingredientsByName, packagesByIngredientId);
     const issues = [];
 
+    const lineNameCounts = new Map();
+    lines.forEach((entry) => lineNameCounts.set(entry.name, (lineNameCounts.get(entry.name) || 0) + 1));
+
     lines.forEach((entry) => {
         if (entry.isTopup) return;
         if (entry.conversionMissing) {
-            issues.push({ text: `«${entry.name}»: нет коэффициента конвертации для единицы «${entry.unit}»`, fixHref: "converter.html?ingredient=" + encodeURIComponent(entry.name) + "&unit=" + encodeURIComponent(entry.unit || ""), fixLabel: "Задать в Конвертере" });
+            const duplicateHint = (lineNameCounts.get(entry.name) || 0) > 1 ? " — из-за этого позиция задвоилась в «Закупке»" : "";
+            issues.push({ text: `«${entry.name}»: нет коэффициента конвертации для единицы «${entry.unit}»${duplicateHint}`, fixHref: "converter.html?ingredient=" + encodeURIComponent(entry.name) + "&unit=" + encodeURIComponent(entry.unit || ""), fixLabel: "Задать в Конвертере" });
             return;
         }
         if (entry.isBoughtPrep) {
@@ -1231,6 +1258,24 @@ function isShoppingEntryChecked(entry) {
     return ing ? !!ingredientStateMap[ing.id] : false;
 }
 
+// Суммарный объём и вес закупок — только для позиций с физической единицей (мл/л/г/кг),
+// штучные и прочие несовместимые единицы в сумму не тянем (складывать "3 шт + 5 пучков"
+// в одно число бессмысленно, поэтому здесь только объём и вес).
+function computePurchaseTotals(lines) {
+    let volumeMl = 0;
+    let weightG = 0;
+    lines.forEach((entry) => {
+        const qty = Number(entry.qty || 0);
+        if (!qty) return;
+        const unit = normalized(entry.unit);
+        if (unit === "мл" || unit === "ml") volumeMl += qty;
+        else if (unit === "л" || unit === "l") volumeMl += qty * 1000;
+        else if (unit === "г" || unit === "g") weightG += qty;
+        else if (unit === "кг" || unit === "kg") weightG += qty * 1000;
+    });
+    return { volumeMl, weightG };
+}
+
 function formatPackageCombo(combo) {
     return combo.combo.map((c) => {
         const sourceLabel = c.purchase_source ? ` (${c.purchase_source})` : "";
@@ -1263,6 +1308,13 @@ function renderShopping() {
 
     const manualLines = manualItems.map((m) => ({ isManual: true, manualId: m.id, name: m.name, qty: m.qty, unit: m.unit, category: m.category, cost: m.cost, is_checked: m.is_checked }));
     const allLines = [...lines, ...manualLines];
+
+    // Одно и то же сырьё может попасть в закупку НЕСКОЛЬКИМИ строками, если разные рецепты
+    // указывают его в единицах, между которыми нет коэффициента конвертации (см. entry.conversionMissing
+    // ниже) — их нельзя механически сложить в одну цифру, не зная соотношения. Считаем, сколько раз
+    // встречается каждое название, чтобы явно пояснить пользователю, почему это две строки, а не баг.
+    const nameCounts = new Map();
+    allLines.forEach((entry) => nameCounts.set(entry.name, (nameCounts.get(entry.name) || 0) + 1));
 
     if (allLines.length === 0) {
         const empty = document.createElement("div");
@@ -1408,7 +1460,11 @@ function renderShopping() {
                 packLine.className = "ev-pack-line";
                 if (entry.conversionMissing) {
                     packLine.classList.add("warn");
-                    packLine.append("Нет коэффициента для «" + entry.unit + "» — ", conversionWarningLink(entry));
+                    const duplicated = (nameCounts.get(entry.name) || 0) > 1;
+                    const prefix = duplicated
+                        ? `Эта же позиция уже есть строкой выше в других единицах — нет коэффициента для «${entry.unit}» → `
+                        : `Нет коэффициента для «${entry.unit}» — `;
+                    packLine.append(prefix, conversionWarningLink(entry));
                 } else if (entry.packageCombo) {
                     packLine.textContent = "Купить: " + formatPackageCombo(entry.packageCombo);
                 } else if (ing) {
@@ -1426,7 +1482,13 @@ function renderShopping() {
 
     const budget = document.getElementById("evBudgetTotal");
     budget.className = "ev-budget-total" + (eventRow.plan_budget && totalCost > eventRow.plan_budget ? " over" : "");
-    budget.textContent = `Итого по закупке: ${formatMoney(totalCost)}` + (eventRow.plan_budget ? ` из бюджета ${formatMoney(eventRow.plan_budget)}` : "");
+    budget.innerHTML = "";
+    addText(budget, "div", "", `Итого по закупке: ${formatMoney(totalCost)}` + (eventRow.plan_budget ? ` из бюджета ${formatMoney(eventRow.plan_budget)}` : ""));
+    const { volumeMl, weightG } = computePurchaseTotals(allLines);
+    const totalsParts = [];
+    if (volumeMl > 0) totalsParts.push(`${formatNum(volumeMl / 1000)} л`);
+    if (weightG > 0) totalsParts.push(`${formatNum(weightG / 1000)} кг`);
+    if (totalsParts.length > 0) addText(budget, "div", "ev-purchase-totals", `Суммарно: ${totalsParts.join(" + ")}`);
 
     if (prevRects.size > 0) {
         requestAnimationFrame(() => {
@@ -1880,7 +1942,7 @@ async function init() {
     renderHeader();
     renderSummary();
     renderSidebar();
-    renderMenu();
+    renderActiveTab();
 }
 
 init();

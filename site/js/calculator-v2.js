@@ -637,16 +637,18 @@ function shareBasis(row) {
     return { kind: "unknown" };
 }
 
-// Максимум считается по единой (мл=г) шкале — доливы и позиции без перевода в неё
-// не входят, у них своё, отдельное представление шкалы. Считается отдельно по группам
-// scaleGroup (см. collectTreeEntries) — иначе непересчитанный (без объёма выхода)
-// "сырой" объём партии заготовки исказил бы общий масштаб для всех остальных позиций.
-function computeMaxByGroup(rowEntries) {
+// "Доля" — это буквально доля от суммы состава (сколько процентов от общего объёма
+// занимает конкретный ингредиент), а не "насколько он велик по сравнению с самым
+// большим" — поэтому 100%-й отметкой служит СУММА группы, а не максимум в ней.
+// Считается отдельно по группам scaleGroup (см. collectTreeEntries) — иначе
+// непересчитанный (без объёма выхода) "сырой" объём партии заготовки исказил бы
+// общую сумму для всех остальных позиций.
+function computeGroupTotals(rowEntries) {
     const map = new Map();
     rowEntries.forEach(({ row, scaleGroup }) => {
         const basis = shareBasis(row);
         if (basis.kind === "ml" || basis.kind === "g") {
-            map.set(scaleGroup, Math.max(map.get(scaleGroup) || 0, basis.qty));
+            map.set(scaleGroup, (map.get(scaleGroup) || 0) + basis.qty);
         }
     });
     return map;
@@ -757,13 +759,13 @@ function renderRows() {
         return;
     }
 
-    const maxByGroup = computeMaxByGroup(rowEntries);
+    const totalsByGroup = computeGroupTotals(rowEntries);
     entries.forEach((entry) => {
         if (entry.kind === "note") {
             renderTreeNote(entry);
         } else {
-            const maxComparable = maxByGroup.get(entry.scaleGroup) || 1;
-            renderCalcRow(entry.row, { maxComparable, level: entry.level, key: entry.key });
+            const groupTotal = totalsByGroup.get(entry.scaleGroup) || 1;
+            renderCalcRow(entry.row, { groupTotal, level: entry.level, key: entry.key });
         }
     });
 }
@@ -829,8 +831,8 @@ function renderCalcRow(row, options) {
     } else if (basis.kind === "unknown") {
         bar.style.width = "100%";
     } else {
-        const groupMax = options.maxComparable || 1;
-        bar.style.width = Math.max(5, Math.min(100, (basis.qty / groupMax) * 100)) + "%";
+        const groupTotal = options.groupTotal || 1;
+        bar.style.width = Math.max(5, Math.min(100, (basis.qty / groupTotal) * 100)) + "%";
     }
     share.appendChild(bar);
     shareCell.appendChild(share);

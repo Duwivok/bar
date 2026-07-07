@@ -14,9 +14,9 @@
 <body class="bc-v2-page">
 <div class="bc-shell">
     <aside class="bc-rail" aria-label="Навигация">
-        <a class="bc-logo" href="index.html">B</a>
+        <a class="bc-logo" href="index-v2.html">B</a>
         <nav class="bc-nav">
-            <a href="index.html">
+            <a href="index-v2.html">
                 <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>
                 <span class="bc-nav-label">Главная</span>
             </a>
@@ -72,7 +72,9 @@
                     <div id="categoryFilter" class="bc-filter"></div>
                     <div id="sortFilter" class="bc-filter"></div>
                     <div id="eventFilter" class="bc-filter"></div>
-                    <input id="searchInput" class="bc-search" type="search" placeholder="поиск...">
+                    <div class="bc-search-wrap">
+                        <input id="searchInput" class="bc-search" type="search" placeholder="поиск...">
+                    </div>
                 </div>
             </div>
 
@@ -231,8 +233,9 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="js/supabase-client.js"></script>
-<script src="js/version-toggle.js?v=2"></script>
+<script src="js/version-toggle.js?v=3"></script>
 <script src="js/constants.js?v=price-sources-7"></script>
-<script src="js/ingredients-v2.js?v=18"></script>
+<script src="js/filter-popup.js"></script>
+<script src="js/ingredients-v2.js?v=20"></script>
 </body>
 </html>

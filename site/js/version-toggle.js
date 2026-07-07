@@ -2,6 +2,8 @@
 // Если для текущей страницы новой версии ещё нет, просто предупреждает об этом.
 (function () {
     const ALT_VERSION = {
+        "index.html": "index-v2.html",
+        "index-v2.html": "index.html",
         "recipes.html": "recipes-v2.html",
         "recipes-v2.html": "recipes.html",
         "calculator.html": "calculator-v2.html",
@@ -51,48 +53,22 @@
 
     const slot = document.getElementById("versionToggleSlot");
 
-    // На десктопе шапка раздела никуда не скроллится — кнопку докаем прямо в неё,
-    // рядом с "инструменты"/основным действием (см. #versionToggleSlot в разметке),
-    // без отдельного фиксированного элемента.
+    // Кнопку докаем прямо в шапку раздела, рядом с "инструменты"/основным действием
+    // (см. #versionToggleSlot в разметке) — она живёт в обычном потоке страницы и
+    // уезжает вместе с шапкой при скролле вниз, а не висит поверх всего экрана.
     //
-    // На мобильном шапка уезжает вместе со списком при скролле, поэтому кнопку
-    // держим в фиксированном слое поверх всей страницы. Слой — это отдельный
-    // fixed-контейнер на весь экран (pointer-events: none), а сама кнопка внутри
-    // него положением absolute; так браузер не пересчитывает position:fixed для
-    // самой кнопки на каждый кадр скролла, что раньше вызывало заметное "плавание".
-    let fixedLayer = null;
-    function ensureFixedLayer() {
-        if (fixedLayer) return fixedLayer;
-        fixedLayer = document.createElement("div");
+    // Если на странице нет слота (напр. "События") — оставляем старое поведение:
+    // фиксированный слой в углу экрана. Слой — отдельный fixed-контейнер на весь
+    // экран (pointer-events: none), а сама кнопка внутри него position:absolute;
+    // так браузер не пересчитывает position:fixed для самой кнопки на каждый кадр
+    // скролла, что раньше вызывало заметное "плавание".
+    if (slot) {
+        btn.classList.add("docked");
+        slot.appendChild(btn);
+    } else {
+        const fixedLayer = document.createElement("div");
         fixedLayer.id = "versionToggleFixedLayer";
         document.body.appendChild(fixedLayer);
-        return fixedLayer;
+        fixedLayer.appendChild(btn);
     }
-
-    const isDesktop = () => window.matchMedia("(min-width: 1081px)").matches;
-
-    // "Единицы" и "Калькулятор" докаем всегда, даже на мобильном: контент тут не такой
-    // длинный, как в "Рецептах"/"Сырье", и плавающая поверх всего кнопка либо закрывала
-    // цифры конвертера, либо просто мешала — пользователь явно просил, чтобы глазик
-    // прокручивался вместе со страницей и пропадал из виду при скролле вниз.
-    const ALWAYS_DOCK_PAGES = ["converter-v2.html", "calculator-v2.html"];
-    const alwaysDock = ALWAYS_DOCK_PAGES.includes(path);
-
-    function place() {
-        if (slot && (alwaysDock || isDesktop())) {
-            btn.classList.add("docked");
-            slot.appendChild(btn);
-        } else {
-            btn.classList.remove("docked");
-            ensureFixedLayer().appendChild(btn);
-        }
-    }
-
-    place();
-
-    let resizeTimer = null;
-    window.addEventListener("resize", () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(place, 150);
-    });
 })();

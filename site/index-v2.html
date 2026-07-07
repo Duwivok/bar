@@ -3,19 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>События v2 - BARCALC.OS</title>
+<title>Главная v2 - BARCALC.OS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Unbounded:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles-v2.css">
-<link rel="stylesheet" href="css/events-v2.css">
+<link rel="stylesheet" href="css/index-v2.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0908">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Барный калькулятор">
 </head>
 <body class="bc-v2-page">
 <div class="bc-shell">
     <aside class="bc-rail" aria-label="Навигация">
         <a class="bc-logo" href="index-v2.html">B</a>
         <nav class="bc-nav">
-            <a href="index-v2.html">
+            <a href="index-v2.html" class="active">
                 <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>
                 <span class="bc-nav-label">Главная</span>
             </a>
@@ -27,7 +35,7 @@
                 <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7.5h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg>
                 <span class="bc-nav-label">Калькулятор</span>
             </a>
-            <a href="events-v2.html" class="active">
+            <a href="events-v2.html">
                 <svg class="bc-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3"/></svg>
                 <span class="bc-nav-label">События</span>
             </a>
@@ -41,20 +49,69 @@
             </a>
         </nav>
     </aside>
+
     <main class="bc-window">
         <section class="bc-list-pane bc-v2-content">
             <header class="bc-header">
-                <div><div class="bc-kicker">BARCALC.OS / EVENTS</div><h1>События</h1></div>
+                <div>
+                    <div class="bc-kicker">BARCALC.OS / СЕГОДНЯ</div>
+                    <h1>Главная</h1>
+                </div>
                 <div class="bc-header-actions">
-                    <button class="bc-primary-link" id="addEventBtn" type="button">+ новое событие</button>
+                    <span id="versionToggleSlot"></span>
+
+                    <div class="bc-filter hm-quickadd" id="quickAddFilter">
+                        <button type="button" class="bc-primary-link hm-quickadd-trigger" id="quickAddTrigger">+ добавить</button>
+                        <div class="bc-filter-overlay hidden" id="quickAddOverlay"></div>
+                        <div class="bc-filter-popup hidden" id="quickAddPopup">
+                            <div class="bc-filter-list" id="quickAddList">
+                                <a class="hm-quickadd-link" href="recipes-v2.html?new=1">+ Рецепт</a>
+                                <a class="hm-quickadd-link" href="events-v2.html?new=1">+ Мероприятие</a>
+                                <a class="hm-quickadd-link" href="ingredients-v2.html?new=1">+ Позиция сырья</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bc-filter hm-issues" id="issuesFilter">
+                        <button type="button" class="hm-issues-trigger" id="issuesTrigger">Проблемы: —</button>
+                        <div class="bc-filter-overlay hidden" id="issuesOverlay"></div>
+                        <div class="bc-filter-popup hidden hm-issues-popup" id="issuesPopup">
+                            <div class="bc-filter-list" id="issuesList"></div>
+                        </div>
+                    </div>
                 </div>
             </header>
-            <div id="status" class="status bc-status"></div>
-            <div id="eventGrid"></div>
+
+            <div id="status" class="bc-status"></div>
+
+            <div class="hm-stats-row" id="statsRow">
+                <a class="bc-v2-card hm-stat-card" href="recipes-v2.html">
+                    <div class="hm-stat-number" id="recipesTotal">—</div>
+                    <div class="hm-stat-label">рецептов</div>
+                    <div class="hm-stat-breakdown" id="recipesBreakdown"></div>
+                    <div class="hm-chip-row" id="recipesChips"></div>
+                </a>
+                <a class="bc-v2-card hm-stat-card" href="ingredients-v2.html">
+                    <div class="hm-stat-number" id="ingredientsTotal">—</div>
+                    <div class="hm-stat-label">позиций номенклатуры</div>
+                    <div class="hm-stat-breakdown" id="ingredientsBreakdown"></div>
+                    <div class="hm-chip-row" id="ingredientsChips"></div>
+                </a>
+            </div>
+
+            <div class="hm-wide-row">
+                <div class="bc-v2-card hm-wide-card">
+                    <h4>Недавняя активность</h4>
+                    <div class="hm-recent-list" id="recentList"></div>
+                </div>
+                <div class="bc-v2-card hm-wide-card">
+                    <h4>Ближайшие события</h4>
+                    <div class="hm-upcoming-list" id="upcomingList"></div>
+                </div>
+            </div>
         </section>
 
-        <aside class="bc-detail-pane ev-side">
-            <div class="bc-kicker">BARCALC.OS / ПОСЛЕДНЕЕ СОБЫТИЕ</div>
+        <aside class="bc-detail-pane hm-side">
             <div id="latestEventSummary"></div>
         </aside>
 
@@ -85,38 +142,11 @@
     </main>
 </div>
 
-<div id="addOverlay" class="overlay hidden">
-    <div class="overlay-panel">
-        <div class="overlay-actions"><button class="overlay-close" id="addCloseBtn">Закрыть</button></div>
-        <h3 id="addModalTitle" class="bc-form-title">Новое мероприятие</h3>
-        <div class="form-grid">
-            <div class="bc-field span-2"><label>Название</label><input type="text" id="fName" placeholder="например, свадьба Ивановых"></div>
-            <div class="bc-field"><label>Дата</label><input type="date" id="fDate"></div>
-            <div class="bc-field"><label>Количество гостей</label><input type="text" id="fGuests" inputMode="numeric"></div>
-            <div class="bc-field"><label>Плановый бюджет</label><input type="text" id="fBudget" inputMode="decimal"></div>
-            <div class="bc-field span-2"><label>Комментарий</label><input type="text" id="fComment"></div>
-        </div>
-        <button class="primary ev-list-modal-submit" id="fSaveBtn">Создать мероприятие</button>
-    </div>
-</div>
-
-<div id="deleteConfirmOverlay" class="overlay hidden">
-    <div class="overlay-panel">
-        <div class="overlay-actions"><button class="overlay-close" id="deleteConfirmCloseBtn">Закрыть</button></div>
-        <h3 class="bc-form-title">Удалить мероприятие?</h3>
-        <p id="deleteConfirmMessage" class="ev-list-confirm-text"></p>
-        <div class="ev-list-confirm-actions">
-            <button type="button" class="bc-button-link" id="deleteConfirmCancelBtn">Нет</button>
-            <button type="button" class="bc-primary-link ev-danger-link" id="deleteConfirmOkBtn">Да, удалить</button>
-        </div>
-    </div>
-</div>
-
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/version-toggle.js?v=3"></script>
 <script src="js/format.js"></script>
-<script src="js/events-v2.js"></script>
+<script src="js/index-v2.js"></script>
 <script>
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));

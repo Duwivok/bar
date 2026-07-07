@@ -1,8 +1,9 @@
-const CACHE_VERSION = 'v22';
+const CACHE_VERSION = 'v30';
 const CACHE_NAME = 'bar-calc-' + CACHE_VERSION;
 
 const APP_SHELL = [
     'index.html',
+    'index-v2.html',
     'recipes.html',
     'recipes-v2.html',
     'calculator.html',
@@ -20,11 +21,14 @@ const APP_SHELL = [
     'css/styles-v2.css',
     'css/event-v2.css',
     'css/events-v2.css',
+    'css/index-v2.css',
     'js/constants.js',
     'js/format.js',
     'js/supabase-client.js',
     'js/search-clear.js',
     'js/multiselect.js',
+    'js/filter-popup.js',
+    'js/index-v2.js',
     'js/recipes.js',
     'js/recipes-v2.js',
     'js/recipe-detail.js',
