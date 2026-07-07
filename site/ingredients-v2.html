@@ -125,6 +125,18 @@
     </div>
 </div>
 
+<div id="recipeUsageDrawer" class="bc-drawer hidden">
+    <div class="bc-drawer-panel">
+        <div class="bc-drawer-actions">
+            <h3 class="bc-form-title" style="margin-right:auto;">Рецепты с этим сырьём</h3>
+            <button id="closeRecipeUsageBtn" type="button" class="bc-icon-btn" title="Закрыть" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+        <div id="recipeUsageContent" class="bc-form-scroll"></div>
+    </div>
+</div>
+
 <div id="ingredientFormDrawer" class="bc-drawer hidden">
     <div class="bc-drawer-panel bc-form-panel">
         <div class="bc-drawer-actions">
@@ -219,8 +231,8 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="js/supabase-client.js"></script>
-<script src="js/version-toggle.js"></script>
+<script src="js/version-toggle.js?v=2"></script>
 <script src="js/constants.js?v=price-sources-7"></script>
-<script src="js/ingredients-v2.js?v=15"></script>
+<script src="js/ingredients-v2.js?v=18"></script>
 </body>
 </html>

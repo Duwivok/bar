@@ -41,7 +41,7 @@
             </a>
         </nav>
     </aside>
-    <main class="bc-window bc-window-single">
+    <main class="bc-window">
         <section class="bc-list-pane bc-v2-content">
             <div class="ev-header">
                 <div>
@@ -94,17 +94,18 @@
             </div>
 
             <div class="ev-tab" data-tab="shopping">
-                <div class="ev-manual-form">
-                    <div class="form-grid">
+                <div class="ev-manual-bar">
+                    <button type="button" class="bc-button-link" id="manualMobileOpenBtn">+ добавить вручную</button>
+                    <button type="button" class="bc-button-link" id="copyShoppingListBtn">скопировать список</button>
+                </div>
+                <div id="manualFormHost" class="ev-manual-form">
+                    <div class="form-grid ev-manual-grid">
                         <div class="form-field"><label>Название позиции</label><input type="text" id="manualItemName" placeholder="напр. Лёд"></div>
                         <div class="form-field"><label>Кол-во</label><input type="text" id="manualItemQty" inputMode="decimal" placeholder="напр. 5"></div>
                         <div class="form-field"><label>Ед.</label><input type="text" id="manualItemUnit" list="unitOptionsList" placeholder="напр. кг"></div>
                         <div class="form-field"><label>Категория</label><input type="text" id="manualItemCategory" list="categoryOptionsList" placeholder="напр. Прочее"></div>
                         <div class="form-field"><label>Цена, ₽</label><input type="text" id="manualItemCost" inputMode="decimal" placeholder="напр. 300"></div>
-                    </div>
-                    <div class="ev-manual-actions">
-                        <button type="button" class="bc-primary-link" id="addManualItemBtn">+ добавить вручную</button>
-                        <button type="button" class="bc-button-link" id="copyShoppingListBtn">скопировать список</button>
+                        <button type="button" class="bc-primary-link ev-manual-submit" id="addManualItemBtn">+ добавить</button>
                     </div>
                 </div>
                 <div id="evShoppingList"></div>
@@ -115,6 +116,27 @@
                 <div id="evIssuesList"></div>
             </div>
         </section>
+
+        <aside class="bc-detail-pane ev-side">
+            <div class="bc-kicker">BARCALC.OS / SUMMARY</div>
+            <h2>Сводка по мероприятию</h2>
+
+            <div class="ev-side-section">
+                <div class="ev-side-head"><h4>Закупки</h4><button type="button" class="bc-button-link" data-goto-tab="shopping">открыть →</button></div>
+                <div id="evSideShopping"></div>
+            </div>
+
+            <div class="ev-side-section">
+                <div class="ev-side-head"><h4>Заготовки</h4><button type="button" class="bc-button-link" data-goto-tab="preps">открыть →</button></div>
+                <div id="evSidePreps"></div>
+            </div>
+
+            <div class="ev-side-section">
+                <div class="ev-side-head"><h4>Проблемы</h4><button type="button" class="bc-button-link" data-goto-tab="issues">открыть →</button></div>
+                <div id="evSideIssues"></div>
+            </div>
+        </aside>
+
         <div class="bc-marquee" aria-hidden="true">
             <div class="bc-marquee-track">
                 <span>FUCK EXCEL</span>
@@ -174,7 +196,10 @@
             <div class="bc-field span-2"><label>Плановый бюджет, ₽</label><input id="editEvBudget" type="text" inputmode="decimal"></div>
             <div class="bc-field span-2"><label>Комментарий</label><input id="editEvComment" type="text"></div>
         </div>
-        <button type="button" class="bc-primary-link ev-modal-submit" id="eventEditSaveBtn">Сохранить</button>
+        <div class="ev-modal-actions ev-modal-actions-split">
+            <button type="button" class="bc-button-link ev-danger-link" id="eventDeleteBtn">Удалить мероприятие</button>
+            <button type="button" class="bc-primary-link ev-modal-submit" id="eventEditSaveBtn">Сохранить</button>
+        </div>
     </div>
 </div>
 
@@ -186,6 +211,21 @@
             <button type="button" class="bc-button-link" id="confirmCancelBtn">Нет</button>
             <button type="button" class="bc-primary-link" id="confirmOkBtn">Да</button>
         </div>
+    </div>
+</div>
+
+<!-- Мобильная карточка "+ добавить вручную" — на десктопе form-host живёт инлайн в
+     "Закупке" одной строкой, на мобильном JS переносит его сюда (setupManualFormPlacement,
+     тот же приём, что и setupAddPickerPlacement для пикера рецептов) -->
+<div id="manualItemModalOverlay" class="ev-modal-overlay hidden">
+    <div class="ev-modal-box">
+        <div class="ev-modal-head">
+            <h3>Добавить позицию вручную</h3>
+            <button type="button" class="bc-icon-btn" id="manualItemModalCloseBtn" title="Закрыть" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+        <div id="manualItemModalSlot"></div>
     </div>
 </div>
 
@@ -207,7 +247,7 @@
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
-<script src="js/version-toggle.js"></script>
+<script src="js/version-toggle.js?v=2"></script>
 <script src="js/constants.js"></script>
 <script src="js/format.js"></script>
 <script src="js/event-calc-v2.js"></script>

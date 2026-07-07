@@ -78,8 +78,26 @@
 
         <div class="bc-marquee" aria-hidden="true">
             <div class="bc-marquee-track">
-                <span>UNITS</span><span>CONVERSION</span><span>YIELD</span>
-                <span>UNITS</span><span>CONVERSION</span><span>YIELD</span>
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
+                <span>FUCK EXCEL</span>
+                <span>FUCK NOTES</span>
+                <span>FUCK SCREENSHOTS</span>
+                <span>FUCK CALCULATIONS</span>
+                <span>FUCK GUIDES</span>
             </div>
         </div>
     </main>
@@ -120,19 +138,42 @@
             <section class="bc-form-section">
                 <div class="bc-section-title">Конвертация единицы рецепта в базовую</div>
                 <div class="bc-field">
-                    <label for="cfName">Ингредиент</label>
-                    <input type="text" id="cfName" list="ingredientNamesList">
+                    <label for="cfName">Ингредиент (сырьё)</label>
+                    <select id="cfName"></select>
                 </div>
-                <div class="bc-field-row">
+                <div class="bc-field">
+                    <label for="cfUnit">Единица рецепта</label>
+                    <select id="cfUnit"></select>
+                    <div class="bc-field-hint">Список берётся из того, что реально указано в составе рецептов для этого ингредиента — так нельзя опечататься и разойтись с рецептом.</div>
+                </div>
+
+                <div class="bc-field-hint" id="cfPresetHint"></div>
+
+                <div class="bc-field">
+                    <label>Как посчитать вес/объём одной единицы?</label>
+                    <div class="bc-segmented bc-form-segmented" id="cfModeSegmented">
+                        <span class="bc-segmented-thumb"></span>
+                        <button type="button" data-value="single" class="active">по одной штуке</button>
+                        <button type="button" data-value="batch">взвесил(а) пачку</button>
+                    </div>
+                </div>
+
+                <div id="cfSingleFields" class="bc-field">
+                    <label id="cfCoeffLabel" for="cfCoeff">Вес/объём одной единицы</label>
+                    <input type="text" id="cfCoeff" inputmode="decimal">
+                </div>
+
+                <div id="cfBatchFields" class="bc-field-row hidden">
                     <div class="bc-field">
-                        <label for="cfUnit">Единица рецепта</label>
-                        <input type="text" id="cfUnit" list="unitOptionsList">
+                        <label for="cfBatchCount">Сколько штук взвесили</label>
+                        <input type="text" id="cfBatchCount" inputmode="decimal" placeholder="напр. 10">
                     </div>
                     <div class="bc-field">
-                        <label for="cfCoeff">Коэффициент</label>
-                        <input type="text" id="cfCoeff" inputmode="decimal">
+                        <label for="cfBatchTotal">Их общий вес/объём</label>
+                        <input type="text" id="cfBatchTotal" inputmode="decimal" placeholder="напр. 15">
                     </div>
                 </div>
+
                 <div class="bc-field">
                     <label for="cfComment">Комментарий</label>
                     <input type="text" id="cfComment" placeholder="необязательно">
@@ -241,7 +282,7 @@
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
-<script src="js/version-toggle.js"></script>
+<script src="js/version-toggle.js?v=2"></script>
 <script src="js/constants.js"></script>
 <script src="js/search-clear.js"></script>
 <script src="js/converter-v2.js"></script>

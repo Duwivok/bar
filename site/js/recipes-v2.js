@@ -357,6 +357,13 @@ async function loadAll() {
 
     populateFilters();
     render();
+
+    // Переход по ссылке "рецепты с этим сырьём" со страницы Сырьё (?id=<recipe_id>) —
+    // сразу открываем нужный рецепт вместо первого по списку.
+    const linkedId = new URLSearchParams(location.search).get("id");
+    if (linkedId && state.recipesById[linkedId]) {
+        selectRecipe(linkedId);
+    }
 }
 
 function populateFilters() {
@@ -808,11 +815,20 @@ if (document.fonts && document.fonts.ready) {
 // (см. createFilter и фокус на .bc-search); наведение курсором временно возвращает
 // всю панель в полный размер (см. CSS :hover).
 if (els.sticky) {
+    // rAF-throttling + гистерезис (разные пороги входа/выхода) убирают дёрганье
+    // от частых scroll-событий и переключения класса туда-обратно на границе.
+    let compactRaf = null;
+    let isCompact = false;
     const updateCompact = () => {
+        compactRaf = null;
         const scrolled = window.scrollY || document.documentElement.scrollTop || 0;
-        els.sticky.classList.toggle("compact", scrolled > 24);
+        if (!isCompact && scrolled > 40) isCompact = true;
+        else if (isCompact && scrolled < 16) isCompact = false;
+        els.sticky.classList.toggle("compact", isCompact);
     };
-    window.addEventListener("scroll", updateCompact);
+    window.addEventListener("scroll", () => {
+        if (compactRaf === null) compactRaf = requestAnimationFrame(updateCompact);
+    }, { passive: true });
 }
 
 loadAll();

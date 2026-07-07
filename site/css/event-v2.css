@@ -44,7 +44,12 @@
 .ev-title-row {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 12px;
+}
+
+.ev-title-row h1 {
+    min-width: 0;
 }
 
 .ev-edit-btn {
@@ -70,6 +75,25 @@
 .ev-edit-btn:hover {
     border-color: var(--orange);
     color: var(--orange);
+}
+
+/* Глазик переключения версии, перенесённый из угла экрана в шапку (см. setupInlineVersionToggle
+   в event-v2.js) — sticky вместо fixed, чтобы при скролле он не наезжал на прилипающую
+   полоску вкладок (.ev-sticky), а просто оставался на месте у верхнего края. */
+#versionToggleBtn.ev-inline-toggle {
+    position: sticky;
+    top: 14px;
+    right: auto;
+    left: auto;
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    z-index: 13;
+}
+
+#versionToggleBtn.ev-inline-toggle svg {
+    width: 16px;
+    height: 16px;
 }
 
 /* ---- Модалки (редактирование мероприятия, подтверждение действия) ---- */
@@ -139,6 +163,29 @@
     margin: 22px auto 0;
 }
 
+.ev-modal-actions-split {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 22px;
+}
+
+.ev-modal-actions-split .ev-modal-submit {
+    margin: 0 0 0 auto;
+}
+
+.ev-danger-link {
+    color: var(--red);
+    border-color: rgba(255, 90, 90, 0.35);
+}
+
+.ev-danger-link:hover {
+    color: #fff;
+    background: var(--red);
+    border-color: var(--red);
+}
+
 /* ---- Тулбар поиска/фильтров/сортировки внутри уже собранного меню ---- */
 
 .ev-menu-toolbar {
@@ -172,13 +219,18 @@
 
 .ev-stat {
     flex: 1 1 0;
-    min-width: 130px;
+    min-width: 110px;
     display: flex;
-    align-items: baseline;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 14px 10px;
+    gap: 3px;
+    padding: 14px 8px;
     border-right: 1px solid var(--line-soft);
+    text-align: center;
+}
+
+.ev-stat b {
     white-space: nowrap;
 }
 
@@ -474,6 +526,7 @@
 .ev-shopping-item {
     border-bottom: 1px solid var(--line-soft);
     padding: 10px 0;
+    transition: transform 0.3s ease;
 }
 
 .ev-shopping-item:last-child {
@@ -542,19 +595,76 @@
     color: var(--orange);
 }
 
+.ev-manual-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin: 0 28px 12px 0;
+}
+
+#manualMobileOpenBtn.hidden {
+    display: none;
+}
+
 .ev-manual-form {
     margin: 0 28px 18px 0;
-    padding: 16px 18px;
+    padding: 12px 16px;
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: rgba(255, 255, 255, 0.025);
 }
 
-.ev-manual-actions {
+/* Десктоп: компактно, одной строкой — пять полей + кнопка, без подписей (их роль
+   играет placeholder), иначе блок занимал непропорционально много места вверху "Закупки". */
+.ev-manual-grid {
     display: flex;
-    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
     gap: 10px;
-    margin-top: 12px;
+}
+
+.ev-manual-grid .form-field {
+    flex: 1 1 120px;
+    min-width: 0;
+    gap: 4px;
+}
+
+.ev-manual-grid .form-field:first-child {
+    flex: 2 1 180px;
+}
+
+.ev-manual-submit {
+    flex: 0 0 auto;
+    min-width: 120px;
+}
+
+@media (min-width: 1081px) {
+    .ev-manual-grid label {
+        display: none;
+    }
+}
+
+/* Мобильная модалка "+ добавить вручную": те же поля, переехавшие через JS, но
+   разложены по одному в столбец с подписями и кнопкой на всю ширину. */
+#manualItemModalSlot .ev-manual-form {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+}
+
+#manualItemModalSlot .ev-manual-grid {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+#manualItemModalSlot .ev-manual-grid .form-field {
+    flex: none;
+}
+
+#manualItemModalSlot .ev-manual-submit {
+    width: 100%;
+    margin-top: 4px;
 }
 
 .ev-budget-total {
@@ -594,15 +704,17 @@
 
 .ev-prep-head {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 6px 12px;
 }
 
 .ev-prep-title {
     position: relative;
     display: inline-block;
-    flex: 1;
+    flex: 1 1 140px;
     min-width: 0;
+    padding-top: 2px;
     font-weight: 700;
     color: var(--text);
     transition: color 0.25s ease;
@@ -628,7 +740,8 @@
 }
 
 .ev-prep-qty {
-    flex: 0 0 auto;
+    flex: 1 1 140px;
+    min-width: 0;
     color: var(--muted);
     font-size: 13px;
     text-align: right;
@@ -666,6 +779,33 @@
 
 .ev-prep-body .form-field input {
     max-width: 160px;
+}
+
+/* .form-field (в отличие от .bc-field) нигде на сайте не красит свои input/select
+   в тёмную тему — раньше это было незаметно на маленьком поле "объём тары", но в
+   карточке "добавить вручную" пять белых полей на тёмном фоне выглядели совсем "сырыми". */
+.form-field label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+}
+
+.form-field input,
+.form-field select {
+    min-height: 38px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    padding: 8px 12px;
+    width: 100%;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+    outline: none;
+    border-color: var(--orange);
 }
 
 .ev-expand-toggle {
@@ -787,9 +927,125 @@
 
     .ev-category-group,
     .ev-manual-form,
+    .ev-manual-bar,
     .ev-budget-total,
     .ev-prep-card,
     .ev-issue-row {
         margin-right: 0;
     }
+
+    .ev-manual-bar {
+        justify-content: space-between;
+    }
+
+    .ev-manual-bar .bc-button-link {
+        flex: 1 1 0;
+        white-space: nowrap;
+    }
+}
+
+/* ---- Боковая сводка (bc-detail-pane) на десктопе: закупки/заготовки/проблемы —
+   .bc-window уже прячет эту колонку на узких экранах (см. styles-v2.css), тут только
+   содержимое ---- */
+
+.ev-side h2 {
+    margin: 4px 0 20px;
+    font-family: "Unbounded", sans-serif;
+    font-size: 20px;
+}
+
+.ev-side-section {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--line-soft);
+}
+
+.ev-side-section:last-child {
+    border-bottom: 0;
+}
+
+.ev-side-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+/* .bc-detail-pane .bc-button-link (styles-v2.css) растягивает кнопку на всю ширину
+   и добавляет отступ сверху — расчитано на кнопку "редактировать" под карточкой рецепта,
+   а не на компактный чип-линк рядом с заголовком секции. Перебиваем именно здесь. */
+.ev-side-head .bc-button-link {
+    width: auto;
+    margin-top: 0;
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+    flex: 0 0 auto;
+}
+
+.ev-side-head h4 {
+    margin: 0;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+}
+
+.ev-side-empty {
+    padding: 0;
+    text-align: left;
+    font-size: 13px;
+}
+
+.ev-side-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ev-side-progress-bar {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.ev-side-progress-bar i {
+    display: block;
+    height: 100%;
+    background: var(--orange);
+    transition: width 0.3s ease;
+}
+
+.ev-side-progress span {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.ev-side-cost {
+    margin-top: 8px;
+    font-weight: 700;
+    color: var(--orange);
+}
+
+.ev-side-cost.over {
+    color: var(--red);
+}
+
+.ev-side-issue {
+    font-size: 13px;
+    color: var(--text);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line-soft);
+}
+
+.ev-side-issue:last-of-type {
+    border-bottom: 0;
+}
+
+.ev-side-more {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--muted);
 }

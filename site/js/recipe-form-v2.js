@@ -59,6 +59,7 @@
         sourceUrl: document.getElementById("rfSourceUrl"),
         tags: document.getElementById("rfTags"),
         saveBtn: document.getElementById("rfSaveBtn"),
+        deleteBtn: document.getElementById("rfDeleteBtn"),
         ingredientList: document.getElementById("rfIngredientList"),
         unitList: document.getElementById("rfUnitList"),
         categoryList: document.getElementById("rfCategoryList"),
@@ -76,6 +77,19 @@
         fEls.status.textContent = message || "";
         fEls.status.className = "bc-status" + (message ? " show" : "");
         if (message) fEls.status.style.borderColor = kind === "error" ? "rgba(255,59,48,.55)" : "rgba(255,103,43,.55)";
+    }
+
+    // Поле с datalist (напр. единицы измерения) технически остаётся текстовым вводом,
+    // поэтому после выбора варианта из подсказки клавиатура на телефоне не закрывается
+    // сама — фокус никуда не делся. Как только значение совпало с одним из вариантов
+    // списка "один в один", это уже готовый ответ (единицы — короткие фиксированные
+    // токены, дальше печатать нечего), так что можно смело убрать клавиатуру.
+    function dismissKeyboardOnListMatch(input, options) {
+        input.addEventListener("input", () => {
+            if (options.includes(input.value)) {
+                setTimeout(() => { if (document.activeElement === input) input.blur(); }, 50);
+            }
+        });
     }
 
     // ---- Переключение вкладок «Форма» / «Текстом» ----
@@ -663,6 +677,7 @@
             fEls.unitList.appendChild(opt);
         });
     }
+    dismissKeyboardOnListMatch(fEls.yieldUnit, UNIT_OPTIONS);
 
     function populateSubtypeSelect() {
         const isPrep = fEls.isPrep.value === "true";
@@ -728,6 +743,7 @@
         unitInput.className = "bc-item-unit";
         unitInput.placeholder = "ед.";
         unitInput.setAttribute("list", "rfUnitList");
+        dismissKeyboardOnListMatch(unitInput, UNIT_OPTIONS);
 
         const topupWrap = document.createElement("label");
         topupWrap.className = "bc-form-item-topup";
@@ -790,6 +806,7 @@
         fEls.items.appendChild(buildItemRow());
         fEls.saveBtn.textContent = "Сохранить рецепт";
         fEls.title.textContent = "Новый рецепт";
+        if (fEls.deleteBtn) fEls.deleteBtn.classList.add("hidden");
         fEls.bulkInput.value = "";
         clearBulkPreview();
         if (bulkTabBtn) bulkTabBtn.classList.remove("hidden");
@@ -811,6 +828,7 @@
         form.editingId = id;
         fEls.title.textContent = "Редактировать рецепт";
         fEls.saveBtn.textContent = "Сохранить изменения";
+        if (fEls.deleteBtn) fEls.deleteBtn.classList.remove("hidden");
 
         fEls.name.value = r.name;
         setIsPrep(r.is_prep ? "true" : "false");
@@ -1032,6 +1050,60 @@
         await finalizeSave(name, resolvedItems, tagNames);
     };
 
+    // Общая логика удаления — используется и кнопкой в форме редактирования, и иконкой
+    // в карточке просмотра рецепта (мобильный detailDrawer), см. wiring ниже.
+    async function deleteRecipeById(recipeId, { reportError } = {}) {
+        const recipe = state.recipesById[recipeId];
+        if (!recipe) return;
+        const fail = reportError || ((msg) => alert(msg));
+
+        // Рецепт может использоваться как заготовка в составе других рецептов —
+        // как и с сырьём в номенклатуре, сначала проверяем, не сломаем ли им состав.
+        const { data: usages, error: usageError } = await db
+            .from("recipe_items")
+            .select("recipe:recipes!recipe_id(name)")
+            .eq("sub_recipe_id", recipeId);
+        if (usageError) { fail("Не получилось проверить использование: " + usageError.message); return; }
+        if (usages.length > 0) {
+            const names = [...new Set(usages.map((u) => u.recipe && u.recipe.name).filter(Boolean))];
+            alert(`Нельзя удалить «${recipe.name}» — он используется как заготовка в составе: ${names.join(", ")}. Сначала уберите его из этих рецептов.`);
+            return;
+        }
+
+        if (!confirm(`Удалить рецепт «${recipe.name}»? Это действие необратимо.`)) return;
+
+        await db.from("recipe_tags").delete().eq("recipe_id", recipeId);
+        await db.from("recipe_items").delete().eq("recipe_id", recipeId);
+        const { error } = await db.from("recipes").delete().eq("id", recipeId);
+        if (error) { fail("Не получилось удалить рецепт: " + error.message); return; }
+
+        showToast(`Рецепт «${recipe.name}» удалён`, "info");
+        await loadAll();
+    }
+
+    // Элемент может отсутствовать, если у клиента закэширован старый HTML этой страницы
+    // без этой кнопки — без этой проверки вся инициализация формы ниже обрывалась бы
+    // на TypeError (см. аналогичный случай с recipePickerComplexToggle в калькуляторе).
+    if (fEls.deleteBtn) fEls.deleteBtn.onclick = async () => {
+        const recipeId = form.editingId;
+        if (!recipeId) return;
+        fEls.deleteBtn.disabled = true;
+        setFormStatus("Удаляем…");
+        await deleteRecipeById(recipeId, { reportError: (msg) => setFormStatus(msg, "error") });
+        fEls.deleteBtn.disabled = false;
+        if (!state.recipesById[recipeId]) closeFormDrawer();
+    };
+
+    const drawerDeleteBtn = document.getElementById("drawerDeleteBtn");
+    if (drawerDeleteBtn) drawerDeleteBtn.onclick = async () => {
+        const recipeId = state.selectedId;
+        if (!recipeId) return;
+        drawerDeleteBtn.disabled = true;
+        await deleteRecipeById(recipeId);
+        drawerDeleteBtn.disabled = false;
+        if (!state.recipesById[recipeId]) closeDrawer();
+    };
+
     document.getElementById("newRecipeBtn").onclick = openForNew;
 
     function interceptEditLink(link) {
@@ -1045,6 +1117,24 @@
     }
     interceptEditLink(document.getElementById("editRecipeLink"));
     interceptEditLink(document.getElementById("drawerEditLink"));
+
+    // Переход по прямой ссылке "recipes-v2.html?edit=<id>" (напр. из калькулятора) —
+    // ждём, пока recipes-v2.js подгрузит рецепты, и открываем форму редактирования сразу,
+    // без дополнительного клика по карточке.
+    (function openEditFromQueryParam() {
+        const editId = new URLSearchParams(location.search).get("edit");
+        if (!editId) return;
+        let attemptsLeft = 100;
+        const tryOpen = () => {
+            if (state.recipesById[editId]) {
+                openForEdit(editId);
+                return;
+            }
+            attemptsLeft -= 1;
+            if (attemptsLeft > 0) setTimeout(tryOpen, 100);
+        };
+        tryOpen();
+    })();
 
     // Кастомный выпадающий список поверх обычного <select> — только для десктопа
     // (на мобильном нативный пикер удобнее и остаётся как есть).

@@ -251,6 +251,15 @@ function buildReadDetail(record, opts = {}) {
         titleRow.appendChild(deleteBtn);
     }
 
+    const recipesBtn = document.createElement("button");
+    recipesBtn.type = "button";
+    recipesBtn.className = "bc-icon-btn";
+    recipesBtn.title = "Рецепты с этим сырьём";
+    recipesBtn.setAttribute("aria-label", "Рецепты с этим сырьём");
+    recipesBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 6.5c-1.8-1.3-4.3-1.7-6.5-1V18c2.2-.7 4.7-.3 6.5 1"/><path d="M12 6.5c1.8-1.3 4.3-1.7 6.5-1V18c-2.2-.7-4.7-.3-6.5 1V6.5Z"/></svg>';
+    recipesBtn.onclick = () => openRecipeUsageDrawer(record);
+    titleRow.appendChild(recipesBtn);
+
     titleWrap.appendChild(titleRow);
 
     const kicker = document.createElement("div");
@@ -368,15 +377,85 @@ function buildReadDetail(record, opts = {}) {
     return root;
 }
 
+function buildIngredientsSummary() {
+    const root = document.createElement("div");
+    root.className = "ing-summary";
+
+    const total = allRows.length;
+    const newCount = allRows.filter(isNew).length;
+    const incompleteCount = allRows.filter((r) => classify(r) === "incomplete").length;
+    const okCount = total - incompleteCount;
+    const convCount = allRows.filter((r) => (conversionsByIngredient[r.id] || []).length > 0).length;
+
+    const title = document.createElement("h2");
+    title.textContent = "Сырьё — сводка";
+    root.appendChild(title);
+
+    const stats = document.createElement("div");
+    stats.className = "ing-summary-stats";
+    [
+        ["всего позиций", total],
+        ["новые", newCount],
+        ["неполные", incompleteCount],
+        ["готовы (ок)", okCount],
+    ].forEach(([label, value]) => {
+        const cell = document.createElement("div");
+        cell.className = "ing-summary-stat";
+        const num = document.createElement("b");
+        num.textContent = value;
+        const lbl = document.createElement("span");
+        lbl.textContent = label;
+        cell.append(num, lbl);
+        stats.appendChild(cell);
+    });
+    root.appendChild(stats);
+
+    if (incompleteCount > 0) {
+        const hint = document.createElement("p");
+        hint.className = "ing-summary-hint";
+        hint.textContent = `${incompleteCount} позиций без категории, базовой ед. или цены упаковки — загляните во вкладку «неполные».`;
+        root.appendChild(hint);
+    }
+
+    const categoryCounts = new Map();
+    allRows.forEach((r) => {
+        const key = r.category || "без категории";
+        categoryCounts.set(key, (categoryCounts.get(key) || 0) + 1);
+    });
+    const topCategories = [...categoryCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+    if (topCategories.length > 0) {
+        const catTitle = document.createElement("div");
+        catTitle.className = "ing-summary-subtitle";
+        catTitle.textContent = "по категориям";
+        root.appendChild(catTitle);
+
+        const chips = document.createElement("div");
+        chips.className = "ing-summary-chips";
+        topCategories.forEach(([name, count]) => {
+            const chip = document.createElement("span");
+            chip.className = "ing-summary-chip";
+            chip.textContent = `${name} · ${count}`;
+            chips.appendChild(chip);
+        });
+        root.appendChild(chips);
+    }
+
+    if (convCount > 0) {
+        const convLine = document.createElement("p");
+        convLine.className = "ing-summary-hint";
+        convLine.textContent = `${convCount} позиций имеют настроенную конвертацию единиц.`;
+        root.appendChild(convLine);
+    }
+
+    return root;
+}
+
 function renderDetail() {
     const record = findRecord(selectedId);
     const pane = document.getElementById("detailPane");
     pane.innerHTML = "";
     if (!record) {
-        const empty = document.createElement("div");
-        empty.className = "bc-empty";
-        empty.textContent = "выберите позицию слева";
-        pane.appendChild(empty);
+        pane.appendChild(buildIngredientsSummary());
     } else {
         pane.appendChild(buildReadDetail(record));
     }
@@ -410,6 +489,80 @@ function openDrawer() {
 function closeDrawer() {
     document.getElementById("detailDrawer").classList.add("hidden");
     document.documentElement.classList.remove("drawer-open");
+}
+
+// ---- Рецепты, использующие это сырьё ----
+// Отдельный drawer (десктоп: справа, мобильный: во весь экран) — открывается кнопкой-книгой
+// в карточке позиции. Может открываться поверх уже открытого detailDrawer на мобильном,
+// поэтому при закрытии снимаем html.drawer-open только если других drawer'ов не осталось.
+
+function anyOtherDrawerOpen(exceptId) {
+    return [...document.querySelectorAll(".bc-drawer")].some((el) => el.id !== exceptId && !el.classList.contains("hidden"));
+}
+
+async function openRecipeUsageDrawer(record) {
+    const drawer = document.getElementById("recipeUsageDrawer");
+    const content = document.getElementById("recipeUsageContent");
+    content.innerHTML = "";
+    const loading = document.createElement("div");
+    loading.className = "bc-empty";
+    loading.textContent = "загрузка...";
+    content.appendChild(loading);
+    drawer.classList.remove("hidden");
+    document.documentElement.classList.add("drawer-open");
+
+    const { data, error } = await db
+        .from("recipe_items")
+        .select("qty,unit,recipe:recipes!recipe_id(id,name,is_prep,subtype)")
+        .eq("ingredient_id", record.id);
+
+    content.innerHTML = "";
+    if (error) {
+        const err = document.createElement("div");
+        err.className = "bc-empty";
+        err.textContent = "Не удалось загрузить: " + error.message;
+        content.appendChild(err);
+        return;
+    }
+
+    const rows = (data || []).filter((r) => r.recipe);
+    if (rows.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "bc-empty";
+        empty.textContent = "Это сырьё пока не используется ни в одном рецепте.";
+        content.appendChild(empty);
+        return;
+    }
+
+    rows
+        .sort((a, b) => (a.recipe.name || "").localeCompare(b.recipe.name || "", "ru"))
+        .forEach((row) => {
+            const item = document.createElement("a");
+            item.className = "bc-recipe-row ing-usage-row";
+            item.href = "recipes-v2.html?id=" + encodeURIComponent(row.recipe.id);
+            item.target = "_blank";
+
+            const title = document.createElement("div");
+            title.className = "ing-usage-name";
+            title.textContent = row.recipe.name || "без названия";
+            item.appendChild(title);
+
+            const meta = document.createElement("div");
+            meta.className = "ing-usage-meta";
+            const kind = row.recipe.is_prep ? "заготовка" : (row.recipe.subtype || "рецепт");
+            const qtyLabel = row.qty != null ? `${row.qty} ${row.unit || ""}`.trim() : "";
+            meta.textContent = qtyLabel ? `${kind} · ${qtyLabel}` : kind;
+            item.appendChild(meta);
+
+            content.appendChild(item);
+        });
+}
+
+function closeRecipeUsageDrawer() {
+    document.getElementById("recipeUsageDrawer").classList.add("hidden");
+    if (!anyOtherDrawerOpen("recipeUsageDrawer")) {
+        document.documentElement.classList.remove("drawer-open");
+    }
 }
 
 function render() {
@@ -1548,11 +1701,21 @@ if (document.fonts && document.fonts.ready) {
 // (см. .bc-recipes-sticky.compact в CSS) — та же логика, что и во вкладке «Рецепты».
 const ingredientsStickyEl = document.getElementById("ingredientsSticky");
 if (ingredientsStickyEl) {
+    // rAF-throttling + гистерезис (разные пороги входа/выхода) убирают дёрганье,
+    // которое возникало от частых scroll-событий и переключения класса туда-обратно
+    // на границе одного порога.
+    let compactRaf = null;
+    let isCompact = false;
     const updateCompact = () => {
+        compactRaf = null;
         const scrolled = window.scrollY || document.documentElement.scrollTop || 0;
-        ingredientsStickyEl.classList.toggle("compact", scrolled > 24);
+        if (!isCompact && scrolled > 40) isCompact = true;
+        else if (isCompact && scrolled < 16) isCompact = false;
+        ingredientsStickyEl.classList.toggle("compact", isCompact);
     };
-    window.addEventListener("scroll", updateCompact);
+    window.addEventListener("scroll", () => {
+        if (compactRaf === null) compactRaf = requestAnimationFrame(updateCompact);
+    }, { passive: true });
 }
 
 document.getElementById("addRowBtn").onclick = openIngredientFormNew;
@@ -1560,6 +1723,9 @@ document.getElementById("searchInput").oninput = (e) => { searchQuery = e.target
 
 document.getElementById("closeDrawerBtn").onclick = closeDrawer;
 document.getElementById("detailDrawer").onclick = (e) => { if (e.target.id === "detailDrawer") closeDrawer(); };
+
+document.getElementById("closeRecipeUsageBtn").onclick = closeRecipeUsageDrawer;
+document.getElementById("recipeUsageDrawer").onclick = (e) => { if (e.target.id === "recipeUsageDrawer") closeRecipeUsageDrawer(); };
 
 document.getElementById("toolsBtn").onclick = () => {
     document.getElementById("toolsOverlay").classList.remove("hidden");

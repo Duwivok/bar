@@ -3,6 +3,7 @@ const state = {
     recipesById: {},
     itemsByRecipe: {},
     ingredientsByName: {},
+    ingredientById: {},
     packagesByIngredientId: {},
     conversionsByIngredientId: {},
     selectedId: null,
@@ -10,6 +11,7 @@ const state = {
     recipeFilter: "all",
     recipeSpirit: "all",
     recipeSort: "name",
+    excludeComplexPrep: false,
     expandedPreps: new Set(),
     targetValue: 1,
     targetUnit: "portion",
@@ -25,10 +27,12 @@ const els = {
     recipePickerBtn: document.getElementById("recipePickerBtn"),
     recipePickerPopup: document.getElementById("recipePickerPopup"),
     recipeSearchInput: document.getElementById("recipeSearchInput"),
+    recipeSearchClearBtn: document.getElementById("recipeSearchClearBtn"),
     recipePickerCloseBtn: document.getElementById("recipePickerCloseBtn"),
     recipePickerSpirit: document.getElementById("recipePickerSpirit"),
     recipePickerFilters: document.getElementById("recipePickerFilters"),
     recipePickerSorts: document.getElementById("recipePickerSorts"),
+    recipePickerComplexToggle: document.getElementById("recipePickerComplexToggle"),
     recipePickerList: document.getElementById("recipePickerList"),
     targetInput: document.getElementById("targetInput"),
     targetUnitLabel: document.getElementById("targetUnitLabel"),
@@ -145,6 +149,22 @@ function recipeBucket(recipe) {
     return "cocktail";
 }
 
+// "Сложная" заготовка — своя трудоёмкость (labor_minutes) выше порога. Используется
+// фильтром "искл. сложные заготовки": скрывает рецепты, где такая заготовка нужна
+// напрямую или где-то в цепочке вложенных заготовок — чтобы быстро найти, что
+// реально приготовить на месте прямо сейчас, без долгой предварительной работы.
+const COMPLEX_PREP_MINUTES = 15;
+
+function recipeUsesComplexPrep(recipe, seen = new Set()) {
+    if (!recipe || seen.has(recipe.id)) return false;
+    seen.add(recipe.id);
+    if (recipe.is_prep && Number(recipe.labor_minutes || 0) >= COMPLEX_PREP_MINUTES) return true;
+    return (state.itemsByRecipe[recipe.id] || []).some((item) => {
+        if (!item.isSub || !item.targetId) return false;
+        return recipeUsesComplexPrep(state.recipesById[item.targetId], seen);
+    });
+}
+
 function unitToSelect(unit) {
     const value = normalized(unit);
     if (value === "мл") return "ml";
@@ -224,8 +244,10 @@ async function loadAll() {
     });
 
     state.ingredientsByName = {};
+    state.ingredientById = {};
     (ingRes.data || []).forEach((ingredient) => {
         state.ingredientsByName[normalized(ingredient.name)] = ingredient;
+        state.ingredientById[ingredient.id] = ingredient;
     });
 
     state.packagesByIngredientId = {};
@@ -261,6 +283,7 @@ function renderRecipePicker() {
         .filter((recipe) => !needle || recipeSearchText(recipe).includes(needle))
         .filter((recipe) => state.recipeFilter === "all" || recipeBucket(recipe) === state.recipeFilter)
         .filter((recipe) => state.recipeSpirit === "all" || normalized(recipe.main_spirit) === state.recipeSpirit)
+        .filter((recipe) => !state.excludeComplexPrep || !recipeUsesComplexPrep(recipe))
         .sort((a, b) => {
             if (state.recipeSort === "kind") {
                 const kindCompare = recipeKind(a).localeCompare(recipeKind(b), "ru");
@@ -447,6 +470,7 @@ function itemToCalcRow(item, multiplier, sourceKey) {
         unit,
         isTopup: item.is_topup,
         recipeId: isSub ? item.targetId : null,
+        ingredientId: item.ingredientId || null,
         key: sourceKey,
     };
 }
@@ -586,35 +610,146 @@ function calculate() {
     renderPresets();
 }
 
-// Разные ингредиенты одного рецепта часто в разных единицах (мл, г, шт/веточка) —
-// сравнивать их количество на одной шкале "доли" бессмысленно (напр. "2 шт" рядом
-// с "1000 мл" выглядели бы как почти пустая полоска). Поэтому шкала считается отдельно
-// внутри каждой группы одинаковых единиц. Долив (топом) тоже не участвует в расчёте
-// максимума — у него нет точного количества, а собственная полоска рисуется фиксированной.
-function computeMaxQtyByUnit(rows) {
+// Для шкалы "доля" грамм приравнивается к миллилитру (плотность большинства баров
+// ингредиентов близка к воде, а точная плотность нам всё равно не известна) — так
+// объёмные и весовые позиции сравнимы на одной шкале. Штучные единицы (шт, шт/веточка
+// и т.п.) сравнивать напрямую нельзя — для них берём перевод конкретного ингредиента
+// из конвертера (unit_conversions); если перевода нет, шкала показывает "недоступно"
+// со ссылкой на конвертер вместо обманчивого предположения.
+function shareBasis(row) {
+    if (row.isTopup) return { kind: "topup" };
+    const unit = normalized(row.unit);
+    if (unit === "мл" || unit === "ml") return { kind: "ml", qty: Number(row.qty || 0) };
+    if (unit === "л" || unit === "l") return { kind: "ml", qty: Number(row.qty || 0) * 1000 };
+    if (unit === "г" || unit === "g") return { kind: "g", qty: Number(row.qty || 0) };
+    if (unit === "кг" || unit === "kg") return { kind: "g", qty: Number(row.qty || 0) * 1000 };
+
+    const ingredient = row.ingredientId ? state.ingredientById[row.ingredientId] : null;
+    if (ingredient) {
+        const baseUnit = normalized(ingredient.base_unit);
+        const coeff = (state.conversionsByIngredientId[ingredient.id] || {})[unit];
+        if (coeff && (baseUnit === "г" || baseUnit === "мл" || baseUnit === "кг" || baseUnit === "л")) {
+            let qty = Number(row.qty || 0) * Number(coeff);
+            if (baseUnit === "кг" || baseUnit === "л") qty *= 1000;
+            return { kind: (baseUnit === "г" || baseUnit === "кг") ? "g" : "ml", qty };
+        }
+    }
+    return { kind: "unknown" };
+}
+
+// Максимум считается по единой (мл=г) шкале — доливы и позиции без перевода в неё
+// не входят, у них своё, отдельное представление шкалы. Считается отдельно по группам
+// scaleGroup (см. collectTreeEntries) — иначе непересчитанный (без объёма выхода)
+// "сырой" объём партии заготовки исказил бы общий масштаб для всех остальных позиций.
+function computeMaxByGroup(rowEntries) {
     const map = new Map();
-    rows.forEach((row) => {
-        if (row.isTopup) return;
-        const key = normalized(row.unit);
-        const qty = Number(row.qty || 0);
-        if (!map.has(key) || qty > map.get(key)) map.set(key, qty);
+    rowEntries.forEach(({ row, scaleGroup }) => {
+        const basis = shareBasis(row);
+        if (basis.kind === "ml" || basis.kind === "g") {
+            map.set(scaleGroup, Math.max(map.get(scaleGroup) || 0, basis.qty));
+        }
     });
     return map;
 }
 
-function renderRows() {
-    els.rows.innerHTML = "";
+// Строит строки состава конкретной заготовки (без DOM) — переиспользуется и при
+// сборе списка "что сейчас видно" (для общего максимума шкалы), и при самой отрисовке,
+// чтобы не дублировать логику пересчёта количества дважды с риском разъехаться.
+function buildTreeRows(recipeId, requiredQty, requiredUnit) {
+    const recipe = state.recipesById[recipeId];
+    if (!recipe) return { rows: [], hasYield: true, recipe: null };
+    const items = state.itemsByRecipe[recipeId] || [];
+    const hasYield = !!recipe.yield_qty;
+    const factor = hasYield
+        ? amountInRecipeYieldUnit(requiredQty, requiredUnit || recipe.yield_unit, recipe) / Number(recipe.yield_qty)
+        : 1;
+    const rows = items.map((item) => {
+        const isSub = item.isSub && item.targetId;
+        const subRecipe = isSub ? state.recipesById[item.targetId] : null;
+        const unit = item.is_topup ? "" : (item.unit || (subRecipe && subRecipe.yield_unit) || "");
+        const qty = item.is_topup
+            ? Number(item.topup_default_qty || 0)
+            : Number(item.qty || 0) * factor;
+        return {
+            type: isSub ? "sub" : "ingredient",
+            name: item.name,
+            perOne: item.is_topup ? item.topup_default_qty : item.qty,
+            qty,
+            unit,
+            isTopup: item.is_topup,
+            recipeId: isSub ? item.targetId : null,
+            ingredientId: item.ingredientId || null,
+        };
+    });
+    return { rows, hasYield, recipe };
+}
+
+// Плоский список всех сейчас видимых строк — корень плюс раскрытые вложенные заготовки
+// (рекурсивно). Считается заранее и один раз, чтобы посчитать ОДИН общий максимум для
+// шкалы "доля": если считать максимум отдельно на каждом уровне вложенности, маленькая
+// заготовка внутри рецепта выглядела бы такой же "полной", как самый большой ингредиент
+// коктейля, хотя по факту её объём в составе значительно меньше.
+function collectVisibleEntries() {
+    const entries = [];
     const recipe = state.recipesById[state.selectedId];
+    if (!recipe) return entries;
     const multiplier = recipeMultiplier(recipe);
-    const directItems = recipe ? (state.itemsByRecipe[recipe.id] || []) : [];
+    const directItems = state.itemsByRecipe[recipe.id] || [];
     const directRows = directItems.map((item, index) => itemToCalcRow(
         item,
         multiplier,
         `root:${index}:${item.targetId || item.name}:${normalized(item.unit)}`
     ));
-    const maxQtyByUnit = computeMaxQtyByUnit(directRows);
+    directRows.forEach((row) => {
+        entries.push({ kind: "row", row, level: 0, key: row.key, scaleGroup: "global" });
+        if (row.type === "sub" && row.recipeId && state.expandedPreps.has(row.key)) {
+            collectTreeEntries(row.recipeId, row.qty, row.unit, 1, row.key, entries, "global");
+        }
+    });
+    return entries;
+}
 
-    if (directRows.length === 0) {
+function collectTreeEntries(recipeId, requiredQty, requiredUnit, level, path, entries, scaleGroup) {
+    if (level > 12) return;
+    const { rows, hasYield, recipe } = buildTreeRows(recipeId, requiredQty, requiredUnit);
+    if (rows.length === 0) return;
+    // Как только заготовка без объёма выхода встретилась один раз, весь её состав
+    // (и всё, что вложено глубже) сравниваем только друг с другом — их количества
+    // посчитаны "как в рецепте на партию", а не в масштабе текущего блюда, и мешать
+    // их с остальной, правильно пересчитанной, шкалой нельзя.
+    const childScaleGroup = hasYield ? scaleGroup : "unscaled:" + path;
+    if (!hasYield) entries.push({ kind: "note", level, recipeId, recipeName: recipe.name });
+    rows.forEach((row, index) => {
+        const key = `${path}>${index}:${row.recipeId || row.name}:${normalized(row.unit)}`;
+        entries.push({ kind: "row", row, level, key, scaleGroup: childScaleGroup });
+        if (row.type === "sub" && state.expandedPreps.has(key)) {
+            collectTreeEntries(row.recipeId, row.qty, row.unit, level + 1, key, entries, childScaleGroup);
+        }
+    });
+}
+
+function renderTreeNote({ level, recipeId, recipeName }) {
+    const note = document.createElement("div");
+    note.className = "bc-calc-tree-note";
+    note.style.setProperty("--level", String(level));
+    note.append("в рецепте «" + recipeName + "» не указан ");
+    const link = document.createElement("a");
+    link.className = "bc-calc-tree-note-link";
+    link.href = "recipes-v2.html?edit=" + encodeURIComponent(recipeId);
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "объём выхода";
+    note.appendChild(link);
+    note.append(" — состав показан без пересчёта под нужное количество");
+    els.rows.appendChild(note);
+}
+
+function renderRows() {
+    els.rows.innerHTML = "";
+    const entries = collectVisibleEntries();
+    const rowEntries = entries.filter((entry) => entry.kind === "row");
+
+    if (rowEntries.length === 0) {
         const empty = document.createElement("div");
         empty.className = "bc-calc-empty";
         empty.textContent = "Нет состава для расчета.";
@@ -622,12 +757,27 @@ function renderRows() {
         return;
     }
 
-    directRows.forEach((row) => {
-        renderCalcRow(row, { maxQtyByUnit, level: 0, key: row.key });
-        if (row.type === "sub" && row.recipeId && state.expandedPreps.has(row.key)) {
-            renderRecipeTree(row.recipeId, row.qty, row.unit, 1, row.key);
+    const maxByGroup = computeMaxByGroup(rowEntries);
+    entries.forEach((entry) => {
+        if (entry.kind === "note") {
+            renderTreeNote(entry);
+        } else {
+            const maxComparable = maxByGroup.get(entry.scaleGroup) || 1;
+            renderCalcRow(entry.row, { maxComparable, level: entry.level, key: entry.key });
         }
     });
+}
+
+// Есть ли где-то во вложенном составе заготовка без объёма выхода — проверяем заранее,
+// не дожидаясь раскрытия строки, иначе на телефоне (где предупреждение видно только
+// внутри развёрнутого дерева) пользователь мог вообще не узнать о проблеме.
+function subtreeHasMissingYield(recipeId, seen = new Set()) {
+    if (!recipeId || seen.has(recipeId)) return false;
+    seen.add(recipeId);
+    const recipe = state.recipesById[recipeId];
+    if (!recipe) return false;
+    if (!recipe.yield_qty) return true;
+    return (state.itemsByRecipe[recipeId] || []).some((item) => item.isSub && item.targetId && subtreeHasMissingYield(item.targetId, seen));
 }
 
 function renderCalcRow(row, options) {
@@ -644,6 +794,13 @@ function renderCalcRow(row, options) {
         name.type = "button";
         name.classList.add("has-tree");
         name.textContent = `${state.expandedPreps.has(options.key) ? "−" : "+"} ${row.name}`;
+        if (subtreeHasMissingYield(row.recipeId)) {
+            const warn = document.createElement("span");
+            warn.className = "bc-calc-yield-warn";
+            warn.title = "в составе есть заготовка без указанного объёма выхода — раскройте, чтобы посмотреть";
+            warn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3.5 22 20.5H2Z" stroke-linejoin="round"/><path d="M12 9.5v5.2M12 17.8v.2"/></svg>';
+            name.appendChild(warn);
+        }
         name.onclick = () => {
             if (state.expandedPreps.has(options.key)) state.expandedPreps.delete(options.key);
             else state.expandedPreps.add(options.key);
@@ -661,70 +818,38 @@ function renderCalcRow(row, options) {
     target.className = "bc-calc-row-target";
     target.textContent = row.isTopup ? "топом" : displayQty(row.qty, row.unit);
 
+    const shareCell = document.createElement("div");
+    shareCell.className = "bc-calc-share-cell";
+    const basis = shareBasis(row);
     const share = document.createElement("span");
-    share.className = "bc-calc-share";
+    share.className = "bc-calc-share kind-" + basis.kind;
     const bar = document.createElement("i");
-    const groupMax = options.maxQtyByUnit ? (options.maxQtyByUnit.get(normalized(row.unit)) || 1) : (options.maxQty || 1);
-    bar.style.width = row.isTopup
-        ? "28%"
-        : Math.max(5, Math.min(100, (Number(row.qty || 0) / groupMax) * 100)) + "%";
+    if (basis.kind === "topup") {
+        bar.style.width = "28%";
+    } else if (basis.kind === "unknown") {
+        bar.style.width = "100%";
+    } else {
+        const groupMax = options.maxComparable || 1;
+        bar.style.width = Math.max(5, Math.min(100, (basis.qty / groupMax) * 100)) + "%";
+    }
     share.appendChild(bar);
+    shareCell.appendChild(share);
+
+    if (basis.kind === "unknown") {
+        const link = document.createElement("a");
+        link.className = "bc-calc-share-link";
+        link.href = "converter-v2.html?ingredient=" + encodeURIComponent(row.name) + "&unit=" + encodeURIComponent(row.unit || "");
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.textContent = "нет перевода в мл/г — задать →";
+        shareCell.appendChild(link);
+    }
 
     item.appendChild(name);
     item.appendChild(perOne);
     item.appendChild(target);
-    item.appendChild(share);
+    item.appendChild(shareCell);
     els.rows.appendChild(item);
-}
-
-function renderRecipeTree(recipeId, requiredQty, requiredUnit, level, path) {
-    const recipe = state.recipesById[recipeId];
-    if (!recipe) return;
-    const items = state.itemsByRecipe[recipeId] || [];
-    if (items.length === 0) return;
-
-    // У заготовки может быть не указан объём выхода (yield_qty) в карточке рецепта —
-    // тогда пропорцию для пересчёта посчитать нечем. Раньше в этом случае состав вообще
-    // не показывался (кнопка "+" переключалась в "−", но строк не появлялось). Теперь
-    // показываем состав "как в рецепте" (factor=1) и явно предупреждаем, что это без пересчёта.
-    const hasYield = !!recipe.yield_qty;
-    const factor = hasYield
-        ? amountInRecipeYieldUnit(requiredQty, requiredUnit || recipe.yield_unit, recipe) / Number(recipe.yield_qty)
-        : 1;
-    if (!hasYield) {
-        const note = document.createElement("div");
-        note.className = "bc-calc-tree-note";
-        note.style.setProperty("--level", String(level));
-        note.textContent = "в рецепте «" + recipe.name + "» не указан объём выхода — состав показан без пересчёта под нужное количество";
-        els.rows.appendChild(note);
-    }
-    const treeRows = items.map((item) => {
-        const isSub = item.isSub && item.targetId;
-        const subRecipe = isSub ? state.recipesById[item.targetId] : null;
-        const unit = item.is_topup ? "" : (item.unit || (subRecipe && subRecipe.yield_unit) || "");
-        const qty = item.is_topup
-            ? Number(item.topup_default_qty || 0)
-            : Number(item.qty || 0) * factor;
-        return {
-            type: isSub ? "sub" : "ingredient",
-            name: item.name,
-            perOne: item.is_topup ? item.topup_default_qty : item.qty,
-            qty,
-            unit,
-            isTopup: item.is_topup,
-            recipeId: isSub ? item.targetId : null,
-        };
-    });
-    const maxQtyByUnit = computeMaxQtyByUnit(treeRows);
-
-    treeRows.forEach((row, index) => {
-        const item = items[index];
-        const key = `${path}>${index}:${item.targetId || item.name}:${normalized(row.unit)}`;
-        renderCalcRow(row, { maxQtyByUnit, level, key });
-        if (row.type === "sub" && state.expandedPreps.has(key)) {
-            renderRecipeTree(row.recipeId, row.qty, row.unit, level + 1, key);
-        }
-    });
 }
 
 function collectTreeKeys(recipeId, requiredQty, requiredUnit, level, path, targetSet) {
@@ -831,7 +956,7 @@ function renderSummary(recipe, multiplier) {
         summaryRow("Время", `≈ ${formatNum(recipe.labor_minutes * (1 + 0.2 * (multiplier - 1)))} мин`);
     }
 
-    els.editLink.href = "recipes.html?edit=" + encodeURIComponent(recipe.id);
+    els.editLink.href = "recipes-v2.html?edit=" + encodeURIComponent(recipe.id);
 }
 
 els.recipePickerBtn.onclick = () => {
@@ -841,9 +966,20 @@ els.recipePickerBtn.onclick = () => {
 els.recipePickerPopup.onclick = (event) => {
     event.stopPropagation();
 };
+function updateSearchClearVisibility() {
+    els.recipeSearchClearBtn.classList.toggle("hidden", !els.recipeSearchInput.value);
+}
 els.recipeSearchInput.oninput = () => {
     state.recipeSearch = els.recipeSearchInput.value;
+    updateSearchClearVisibility();
     renderRecipePicker();
+};
+els.recipeSearchClearBtn.onclick = () => {
+    els.recipeSearchInput.value = "";
+    state.recipeSearch = "";
+    updateSearchClearVisibility();
+    renderRecipePicker();
+    els.recipeSearchInput.focus();
 };
 els.recipePickerSpirit.onchange = () => {
     state.recipeSpirit = els.recipePickerSpirit.value;
@@ -853,6 +989,15 @@ els.recipePickerFilters.onchange = () => {
     state.recipeFilter = els.recipePickerFilters.value;
     renderRecipePicker();
 };
+// Элемент может отсутствовать, если у клиента закэширован старый HTML этой страницы
+// без этого чекбокса (см. sw.js) — без этой проверки вся инициализация страницы ниже
+// обрывалась бы на TypeError, и рецепты вообще переставали загружаться.
+if (els.recipePickerComplexToggle) {
+    els.recipePickerComplexToggle.onchange = () => {
+        state.excludeComplexPrep = els.recipePickerComplexToggle.checked;
+        renderRecipePicker();
+    };
+}
 document.addEventListener("click", (event) => {
     if (!els.recipePicker.contains(event.target)) closeRecipePicker();
     document.querySelectorAll(".bc-picker-filter.open").forEach((el) => {
@@ -883,13 +1028,23 @@ els.copyBtn.onclick = async () => {
 // занимать весь экран на телефоне, но остаётся доступной (sticky), а не пропадает.
 // Тап или наведение курсором временно возвращают её в полный размер.
 if (els.sticky && els.workspace) {
+    // rAF-throttling + гистерезис (разные пороги входа/выхода) убирают дёрганье
+    // от частых scroll-событий и переключения класса туда-обратно на границе.
+    let compactRaf = null;
+    let isCompact = false;
     const updateCompact = () => {
+        compactRaf = null;
         const scrolled = Math.max(els.workspace.scrollTop, window.scrollY || document.documentElement.scrollTop || 0);
         els.sticky.classList.remove("expanded");
-        els.sticky.classList.toggle("compact", scrolled > 24);
+        if (!isCompact && scrolled > 40) isCompact = true;
+        else if (isCompact && scrolled < 16) isCompact = false;
+        els.sticky.classList.toggle("compact", isCompact);
     };
-    els.workspace.addEventListener("scroll", updateCompact);
-    window.addEventListener("scroll", updateCompact);
+    const scheduleUpdateCompact = () => {
+        if (compactRaf === null) compactRaf = requestAnimationFrame(updateCompact);
+    };
+    els.workspace.addEventListener("scroll", scheduleUpdateCompact, { passive: true });
+    window.addEventListener("scroll", scheduleUpdateCompact, { passive: true });
 
     // Пока панель сжата, первый тап по ней (в т.ч. по кнопке выбора рецепта) только
     // разворачивает её обратно, не выполняя само действие — иначе с телефона было бы

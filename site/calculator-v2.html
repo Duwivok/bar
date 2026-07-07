@@ -44,7 +44,10 @@
                         </button>
                         <div id="recipePickerPopup" class="bc-calc-picker-popup hidden">
                             <div class="bc-calc-picker-search-row">
-                                <input id="recipeSearchInput" class="bc-calc-picker-search" type="search" placeholder="поиск рецепта" autocomplete="off">
+                                <div class="bc-calc-search-wrap">
+                                    <input id="recipeSearchInput" class="bc-calc-picker-search" type="search" placeholder="поиск рецепта" autocomplete="off">
+                                    <button type="button" id="recipeSearchClearBtn" class="bc-calc-search-clear hidden" aria-label="Очистить поиск">×</button>
+                                </div>
                                 <button type="button" id="recipePickerCloseBtn" class="bc-calc-picker-close" aria-label="Закрыть">×</button>
                             </div>
                             <select id="recipePickerSpirit" class="bc-calc-picker-spirit" aria-label="основной алкоголь"></select>
@@ -57,6 +60,10 @@
                                 <option value="custom">кастом</option>
                             </select>
                             <div id="recipePickerSorts" class="bc-calc-picker-sorts"></div>
+                            <label class="bc-calc-picker-toggle">
+                                <input type="checkbox" id="recipePickerComplexToggle">
+                                искл. сложные заготовки
+                            </label>
                             <div id="recipePickerList" class="bc-calc-picker-list" role="listbox"></div>
                         </div>
                     </div>
@@ -119,7 +126,7 @@
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
-<script src="js/version-toggle.js"></script>
+<script src="js/version-toggle.js?v=2"></script>
 <script src="js/format.js"></script>
 <script src="js/calculator-v2.js"></script>
 </body>

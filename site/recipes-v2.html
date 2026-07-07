@@ -141,6 +141,9 @@
             <a id="drawerEditLink" class="bc-ghost-link bc-icon-btn" href="recipes.html" title="Редактировать" aria-label="Редактировать">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4Z"/><path d="M14 5l3 3"/></svg>
             </a>
+            <button id="drawerDeleteBtn" type="button" class="bc-icon-btn ing-danger" title="Удалить рецепт" aria-label="Удалить рецепт">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 7h14M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg>
+            </button>
             <button id="closeDrawerBtn" type="button" class="bc-icon-btn" title="Закрыть" aria-label="Закрыть">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
             </button>
@@ -303,7 +306,8 @@
             <div id="rfBulkPreview" class="bc-bulk-preview hidden"></div>
         </div>
 
-        <div class="bc-form-footer">
+        <div class="bc-form-footer bc-form-footer-split">
+            <button type="button" class="bc-button-link rf-danger-link hidden" id="rfDeleteBtn">Удалить рецепт</button>
             <button type="button" class="bc-primary-link bc-form-save" id="rfSaveBtn">Сохранить рецепт</button>
         </div>
     </div>
@@ -315,7 +319,7 @@
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
-<script src="js/version-toggle.js"></script>
+<script src="js/version-toggle.js?v=2"></script>
 <script src="js/format.js"></script>
 <script src="js/constants.js"></script>
 <script src="js/recipes-v2.js"></script>

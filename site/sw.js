@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v19';
+const CACHE_VERSION = 'v22';
 const CACHE_NAME = 'bar-calc-' + CACHE_VERSION;
 
 const APP_SHELL = [

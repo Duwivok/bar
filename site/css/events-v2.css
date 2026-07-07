@@ -8,13 +8,18 @@
 
 .ev-list-row {
     position: relative;
-    padding-right: 56px;
+    padding-right: 96px;
 }
 
-.ev-list-copy-btn {
+.ev-list-actions {
     position: absolute;
     right: 16px;
     bottom: 14px;
+    display: flex;
+    gap: 8px;
+}
+
+.ev-list-copy-btn {
     width: 30px;
     height: 30px;
     padding: 0;
@@ -36,6 +41,115 @@
 .ev-list-copy-btn:hover {
     border-color: var(--orange);
     color: var(--orange);
+}
+
+.ev-list-delete-btn:hover {
+    border-color: var(--red);
+    color: var(--red);
+}
+
+/* Модалка подтверждения удаления — та же .overlay/.overlay-panel разметка, что и
+   у формы нового события, перекрашенная в тёмную v2-палитру через свой #id. */
+#deleteConfirmOverlay .overlay-panel {
+    background: #0d0a08;
+    color: var(--text);
+    border-left: 1px solid var(--line);
+    max-width: 420px;
+}
+
+#deleteConfirmOverlay h3,
+#deleteConfirmOverlay p {
+    color: var(--text);
+}
+
+#deleteConfirmOverlay .overlay-close {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+}
+
+.ev-list-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.ev-danger-link {
+    color: var(--red);
+    border-color: rgba(255, 90, 90, 0.35);
+}
+
+.ev-danger-link:hover {
+    color: #fff;
+    background: var(--red);
+    border-color: var(--red);
+}
+
+/* ---- Боковая сводка по последнему мероприятию (bc-detail-pane) на десктопе ---- */
+
+.ev-side h2 {
+    margin: 4px 0 10px;
+    font-family: "Unbounded", sans-serif;
+    font-size: 20px;
+}
+
+.ev-side-meta {
+    margin-bottom: 14px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.ev-side-countdown {
+    display: inline-block;
+    margin-bottom: 14px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 103, 43, 0.35);
+    color: var(--orange);
+    font-size: 12px;
+}
+
+.ev-side-breakdown {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.ev-side-comment {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 13px;
+    color: var(--text);
+}
+
+.ev-side-section {
+    margin-bottom: 20px;
+}
+
+.ev-side-progress span {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.ev-side-cost {
+    margin-top: 8px;
+    font-weight: 700;
+    color: var(--orange);
+}
+
+.ev-side-open-btn {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+}
+
+.ev-side-empty {
+    padding: 0;
+    text-align: left;
+    font-size: 13px;
 }
 
 /* Модалка "+ новое событие" / "скопировать в новое мероприятие" — та же разметка

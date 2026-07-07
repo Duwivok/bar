@@ -7,6 +7,7 @@ const statusEl = document.getElementById("status");
 let ingredientsByName = {}; // name -> {id, name, base_unit}
 let ingredientsById = {};   // id -> {id, name, base_unit}
 let allRecipesByName = {};  // name -> {id, name, is_prep, yield_qty, yield_unit}
+let recipeUnitsByIngredient = {}; // ingredient_id -> string[] — единицы, реально встречающиеся в составе рецептов (кроме базовой)
 
 let convRows = [];   // из unit_conversions
 let yieldRows = [];  // "простые" заготовки (см. loadAll)
@@ -18,6 +19,34 @@ let selectedConvId = null;
 let selectedYieldId = null;
 let editingConvId = null; // id редактируемой (не новой) записи в открытой форме конвертации
 let editingYieldId = null;
+let cfInputMode = "single"; // "single" | "batch" — как заполняется коэффициент в форме конвертации
+
+// Ориентиры для типовых позиций — не точный факт, а отправная точка, чтобы не измерять
+// с нуля. Пользователь всегда может подставить своё значение поверх подсказки.
+// coeff — сколько base_unit (обычно г) в одной unit.
+const CONVERSION_PRESETS = [
+    { keywords: ["мята"], unit: "веточка", coeff: 1.5 },
+    { keywords: ["мята"], unit: "лист", coeff: 0.2 },
+    { keywords: ["базилик"], unit: "лист", coeff: 0.3 },
+    { keywords: ["розмарин"], unit: "веточка", coeff: 1 },
+    { keywords: ["тимьян", "чабрец"], unit: "веточка", coeff: 0.5 },
+    { keywords: ["лимон"], unit: "долька", coeff: 8 },
+    { keywords: ["лайм"], unit: "долька", coeff: 6 },
+    { keywords: ["апельсин"], unit: "долька", coeff: 15 },
+    { keywords: ["грейпфрут"], unit: "долька", coeff: 20 },
+    { keywords: ["огурец"], unit: "долька", coeff: 10 },
+    { keywords: ["имбирь"], unit: "долька", coeff: 5 },
+    { keywords: ["вишня", "черешня"], unit: "шт", coeff: 8 },
+    { keywords: ["клубника"], unit: "шт", coeff: 12 },
+    { keywords: ["маслин", "олив"], unit: "шт", coeff: 4 },
+];
+
+function findPreset(name, unit) {
+    const n = (name || "").toLowerCase();
+    const u = (unit || "").toLowerCase().trim();
+    if (!n || !u) return null;
+    return CONVERSION_PRESETS.find((p) => p.unit === u && p.keywords.some((k) => n.includes(k))) || null;
+}
 
 function findConv(id) { return convRows.find((r) => r.id === id) || null; }
 function findYield(id) { return yieldRows.find((r) => r.id === id) || null; }
@@ -70,7 +99,7 @@ function buildConvRow(record, index) {
     const strong = document.createElement("strong");
     strong.textContent = ing ? ing.name : "ингредиент не найден";
     const sub = document.createElement("span");
-    sub.textContent = ing && ing.base_unit ? `1 ${record.from_unit} = ${record.coefficient} ${ing.base_unit}` : record.from_unit;
+    sub.textContent = ing ? (ing.category || "без категории") : "проверьте Сырьё";
     title.appendChild(strong);
     title.appendChild(sub);
     top.appendChild(title);
@@ -78,10 +107,18 @@ function buildConvRow(record, index) {
 
     const badges = document.createElement("span");
     badges.className = "bc-row-badges";
-    const badge = document.createElement("span");
-    badge.className = "bc-badge-volume";
-    badge.textContent = record.from_unit;
-    badges.appendChild(badge);
+    const volume = document.createElement("span");
+    volume.className = "bc-badge-volume";
+    volume.textContent = ing && ing.base_unit ? `1 ${record.from_unit} = ${record.coefficient} ${ing.base_unit}` : `1 ${record.from_unit} = ${record.coefficient}`;
+    badges.appendChild(volume);
+    const unitBadge = document.createElement("span");
+    unitBadge.textContent = record.from_unit;
+    badges.appendChild(unitBadge);
+    if (record.comment) {
+        const commentBadge = document.createElement("span");
+        commentBadge.textContent = "есть комментарий";
+        badges.appendChild(commentBadge);
+    }
     row.appendChild(badges);
 
     row.onclick = () => selectConv(record.id);
@@ -108,7 +145,7 @@ function buildYieldRow(record, index) {
     const sub = document.createElement("span");
     const rawLabel = rawIng ? rawIng.name : "?";
     sub.textContent = record.rawQty && record.rawUnit
-        ? `${record.rawQty} ${record.rawUnit} (${rawLabel}) → ${record.yield_qty} ${record.yield_unit}`
+        ? `из: ${rawLabel}`
         : "состав не задан";
     title.appendChild(strong);
     title.appendChild(sub);
@@ -117,10 +154,20 @@ function buildYieldRow(record, index) {
 
     const badges = document.createElement("span");
     badges.className = "bc-row-badges";
-    const badge = document.createElement("span");
-    badge.className = "bc-badge-volume";
-    badge.textContent = `${record.yield_qty || "?"} ${record.yield_unit || ""}`.trim();
-    badges.appendChild(badge);
+    const volume = document.createElement("span");
+    volume.className = "bc-badge-volume";
+    volume.textContent = `${record.yield_qty || "?"} ${record.yield_unit || ""}`.trim();
+    badges.appendChild(volume);
+    if (record.rawQty && record.rawUnit) {
+        const formulaBadge = document.createElement("span");
+        formulaBadge.textContent = `${record.rawQty} ${record.rawUnit} → выход`;
+        badges.appendChild(formulaBadge);
+    }
+    if (record.comment) {
+        const commentBadge = document.createElement("span");
+        commentBadge.textContent = "есть комментарий";
+        badges.appendChild(commentBadge);
+    }
     row.appendChild(badges);
 
     row.onclick = () => selectYield(record.id);
@@ -183,6 +230,31 @@ function addMetaLine(container, label, value) {
     container.appendChild(line);
 }
 
+// Плитка вместо фото рецепта — большая цифра коэффициента, чтобы сразу считывалось
+// "что во что превращается", без чтения строк меты.
+function buildStatTile(bigText, smallText) {
+    const tile = document.createElement("div");
+    tile.className = "bc-preview-image";
+    const line = document.createElement("div");
+    line.style.display = "flex";
+    line.style.alignItems = "baseline";
+    line.style.gap = "4px";
+    line.style.whiteSpace = "nowrap";
+    const big = document.createElement("span");
+    big.style.fontFamily = "Unbounded, sans-serif";
+    big.style.fontSize = "18px";
+    big.style.fontWeight = "800";
+    big.style.color = "var(--orange)";
+    big.textContent = bigText;
+    const small = document.createElement("span");
+    small.style.fontSize = "11px";
+    small.textContent = smallText;
+    line.appendChild(big);
+    if (smallText) line.appendChild(small);
+    tile.appendChild(line);
+    return tile;
+}
+
 function buildConvDetail(record, opts = {}) {
     const { titleActions = true } = opts;
     const ing = ingredientsById[record.ingredient_id];
@@ -193,7 +265,7 @@ function buildConvDetail(record, opts = {}) {
     const titleWrap = document.createElement("div");
     const kicker = document.createElement("div");
     kicker.className = "bc-kicker";
-    kicker.textContent = ing ? (ing.base_unit || "без базовой ед.") : "ингредиент не найден";
+    kicker.textContent = ing ? (ing.category || "без категории") : "ингредиент не найден";
     titleWrap.appendChild(kicker);
 
     const titleRow = document.createElement("div");
@@ -221,15 +293,38 @@ function buildConvDetail(record, opts = {}) {
     }
     titleWrap.appendChild(titleRow);
     top.appendChild(titleWrap);
+    top.appendChild(buildStatTile(String(record.coefficient), (ing && ing.base_unit) || ""));
     root.appendChild(top);
 
     const meta = document.createElement("div");
     meta.className = "bc-meta";
     addMetaLine(meta, "Единица рецепта", record.from_unit);
-    addMetaLine(meta, "Коэффициент", String(record.coefficient));
+    addMetaLine(meta, "Базовая единица", ing ? (ing.base_unit || "—") : "");
     if (ing && ing.base_unit) addMetaLine(meta, "Формула", `1 ${record.from_unit} = ${record.coefficient} ${ing.base_unit}`);
     addMetaLine(meta, "Комментарий", record.comment || "");
     root.appendChild(meta);
+
+    if (ing && ing.base_unit) {
+        const sectionTitle = document.createElement("div");
+        sectionTitle.className = "bc-section-title";
+        sectionTitle.textContent = "Пример пересчёта для закупки";
+        root.appendChild(sectionTitle);
+
+        const items = document.createElement("div");
+        items.className = "bc-items";
+        [1, 3, 10].forEach((n) => {
+            const row = document.createElement("div");
+            row.className = "bc-item";
+            const label = document.createElement("span");
+            label.textContent = `рецепт просит ${n} ${record.from_unit}`;
+            const value = document.createElement("span");
+            value.textContent = `${round2(n * record.coefficient)} ${ing.base_unit}`;
+            row.appendChild(label);
+            row.appendChild(value);
+            items.appendChild(row);
+        });
+        root.appendChild(items);
+    }
 
     return root;
 }
@@ -272,6 +367,7 @@ function buildYieldDetail(record, opts = {}) {
     }
     titleWrap.appendChild(titleRow);
     top.appendChild(titleWrap);
+    top.appendChild(buildStatTile(record.yield_qty != null ? String(record.yield_qty) : "?", record.yield_unit || ""));
     root.appendChild(top);
 
     const meta = document.createElement("div");
@@ -281,6 +377,26 @@ function buildYieldDetail(record, opts = {}) {
     addMetaLine(meta, "Выход", record.yield_qty ? `${record.yield_qty} ${record.yield_unit || ""}`.trim() : "");
     addMetaLine(meta, "Комментарий", record.comment || "");
     root.appendChild(meta);
+
+    if (record.rawQty && record.rawUnit && rawIng) {
+        const sectionTitle = document.createElement("div");
+        sectionTitle.className = "bc-section-title";
+        sectionTitle.textContent = "Из чего считается";
+        root.appendChild(sectionTitle);
+
+        const items = document.createElement("div");
+        items.className = "bc-items";
+        const row = document.createElement("div");
+        row.className = "bc-item";
+        const label = document.createElement("span");
+        label.textContent = rawIng.name;
+        const value = document.createElement("span");
+        value.textContent = `${record.rawQty} ${record.rawUnit} → ${record.yield_qty} ${record.yield_unit}`;
+        row.appendChild(label);
+        row.appendChild(value);
+        items.appendChild(row);
+        root.appendChild(items);
+    }
 
     const actionsWrap = document.createElement("div");
     actionsWrap.className = "bc-detail-actions";
@@ -311,11 +427,15 @@ function renderDetail() {
     const drawer = document.getElementById("detailDrawer");
     if (!drawer.classList.contains("hidden")) {
         if (!record) { closeDrawer(); return; }
-        const drawerContent = document.getElementById("drawerContent");
-        drawerContent.innerHTML = "";
-        drawerContent.appendChild(mode === "conv" ? buildConvDetail(record, { titleActions: false }) : buildYieldDetail(record, { titleActions: false }));
-        updateDrawerActions(record);
+        fillDrawerContent(record);
     }
+}
+
+function fillDrawerContent(record) {
+    const drawerContent = document.getElementById("drawerContent");
+    drawerContent.innerHTML = "";
+    drawerContent.appendChild(mode === "conv" ? buildConvDetail(record, { titleActions: false }) : buildYieldDetail(record, { titleActions: false }));
+    updateDrawerActions(record);
 }
 
 function updateDrawerActions(record) {
@@ -328,8 +448,18 @@ function updateDrawerActions(record) {
     };
 }
 
-function openDrawer() { document.getElementById("detailDrawer").classList.remove("hidden"); }
-function closeDrawer() { document.getElementById("detailDrawer").classList.add("hidden"); }
+function openDrawer() {
+    const record = mode === "conv" ? findConv(selectedConvId) : findYield(selectedYieldId);
+    if (!record) return;
+    fillDrawerContent(record);
+    document.getElementById("detailDrawer").classList.remove("hidden");
+    document.documentElement.classList.add("drawer-open");
+}
+
+function closeDrawer() {
+    document.getElementById("detailDrawer").classList.add("hidden");
+    document.documentElement.classList.remove("drawer-open");
+}
 
 function render() {
     renderList();
@@ -337,20 +467,122 @@ function render() {
 }
 
 // ---- Форма конвертации ----
+// Коэффициент — это всегда "вес/объём одной единицы рецепта", но заполнить его можно
+// двумя способами: напрямую (если уже знаете вес одной штуки) или "пачкой" (взвесили
+// сразу несколько штук и не считаете вручную) — см. setCfMode()/effectiveCfCoefficient().
+
+function effectiveCfCoefficient() {
+    if (cfInputMode === "batch") {
+        const count = Number(document.getElementById("cfBatchCount").value.trim().replace(",", "."));
+        const total = Number(document.getElementById("cfBatchTotal").value.trim().replace(",", "."));
+        if (!count || count <= 0 || !total || total <= 0) return null;
+        return total / count;
+    }
+    const coeff = Number(document.getElementById("cfCoeff").value.trim().replace(",", "."));
+    return coeff > 0 ? coeff : null;
+}
+
+function setCfMode(value) {
+    cfInputMode = value;
+    const segmented = document.getElementById("cfModeSegmented");
+    const buttons = [...segmented.querySelectorAll("button")];
+    const btn = buttons.find((b) => b.dataset.value === value) || buttons[0];
+    buttons.forEach((b) => b.classList.toggle("active", b === btn));
+    const thumb = segmented.querySelector(".bc-segmented-thumb");
+    if (thumb && btn) {
+        thumb.style.transform = "none";
+        thumb.style.left = btn.offsetLeft + "px";
+        thumb.style.width = btn.offsetWidth + "px";
+    }
+    document.getElementById("cfSingleFields").classList.toggle("hidden", value !== "single");
+    document.getElementById("cfBatchFields").classList.toggle("hidden", value !== "batch");
+    refreshConvFormula();
+}
+
+document.getElementById("cfModeSegmented").querySelectorAll("button").forEach((btn) => {
+    btn.onclick = () => setCfMode(btn.dataset.value);
+});
+
+// Единица рецепта выбирается, а не вписывается — список строится из того, что реально
+// стоит в составе рецептов у этого ингредиента (см. recipeUnitsByIngredient в loadAll()),
+// поэтому опечататься или разойтись с рецептом здесь нельзя.
+function refreshCfUnitOptions(desiredUnit) {
+    const name = document.getElementById("cfName").value.trim();
+    const ing = ingredientsByName[name];
+    const select = document.getElementById("cfUnit");
+    const target = desiredUnit !== undefined ? desiredUnit : select.value;
+    select.innerHTML = "";
+
+    if (!ing) {
+        select.disabled = true;
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "сначала укажите ингредиент";
+        select.appendChild(opt);
+        return;
+    }
+
+    const units = new Set(recipeUnitsByIngredient[ing.id] || []);
+    if (target) units.add(target);
+
+    if (units.size === 0) {
+        select.disabled = true;
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "в рецептах пока нет других единиц для этого ингредиента";
+        select.appendChild(opt);
+        return;
+    }
+
+    select.disabled = false;
+    [...units].sort((a, b) => a.localeCompare(b, "ru")).forEach((u) => {
+        const opt = document.createElement("option");
+        opt.value = u;
+        opt.textContent = u;
+        select.appendChild(opt);
+    });
+    select.value = target && units.has(target) ? target : [...units][0];
+}
+
+function refreshCfPresetHint() {
+    const name = document.getElementById("cfName").value.trim();
+    const fromUnit = document.getElementById("cfUnit").value.trim();
+    const hint = document.getElementById("cfPresetHint");
+    const preset = findPreset(name, fromUnit);
+    hint.innerHTML = "";
+    if (!preset) return;
+    const ing = ingredientsByName[name];
+    const baseUnit = (ing && ing.base_unit) || "г";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "bc-ghost-link";
+    btn.textContent = `подсказка: 1 ${fromUnit} ≈ ${preset.coeff} ${baseUnit} — подставить?`;
+    btn.onclick = () => {
+        setCfMode("single");
+        document.getElementById("cfCoeff").value = preset.coeff;
+        refreshConvFormula();
+    };
+    hint.appendChild(btn);
+}
 
 function refreshConvFormula() {
     const name = document.getElementById("cfName").value.trim();
     const fromUnit = document.getElementById("cfUnit").value.trim();
-    const coeff = document.getElementById("cfCoeff").value.trim();
     const ing = ingredientsByName[name];
     const out = document.getElementById("cfFormula");
+    const coeff = effectiveCfCoefficient();
     if (ing && ing.base_unit && fromUnit && coeff) {
-        out.textContent = `1 ${fromUnit} = ${coeff} ${ing.base_unit}`;
+        out.textContent = `1 ${fromUnit} = ${round2(coeff)} ${ing.base_unit}`;
     } else if (name && !ing) {
         out.textContent = "ингредиент не найден в Сырье";
     } else {
         out.textContent = "";
     }
+    refreshCfPresetHint();
+}
+
+function round2(n) {
+    return Math.round(n * 100) / 100;
 }
 
 function openConvForm(id) {
@@ -358,36 +590,40 @@ function openConvForm(id) {
     const record = id ? findConv(id) : null;
     document.getElementById("convFormTitle").textContent = record ? "Изменить конвертацию" : "Новая конвертация";
     document.getElementById("convFormStatus").innerHTML = "";
+    refreshCfNameOptions();
     document.getElementById("cfName").value = record ? (ingredientsById[record.ingredient_id] || {}).name || "" : "";
-    document.getElementById("cfUnit").value = record ? record.from_unit : "";
     document.getElementById("cfCoeff").value = record ? record.coefficient : "";
+    document.getElementById("cfBatchCount").value = "";
+    document.getElementById("cfBatchTotal").value = "";
     document.getElementById("cfComment").value = record ? (record.comment || "") : "";
-    refreshConvFormula();
     document.getElementById("convFormDrawer").classList.remove("hidden");
+    document.documentElement.classList.add("drawer-open");
+    refreshCfUnitOptions(record ? record.from_unit : "");
+    setCfMode("single");
+    refreshConvFormula();
 }
 
 function closeConvForm() {
     document.getElementById("convFormDrawer").classList.add("hidden");
+    document.documentElement.classList.remove("drawer-open");
 }
 
 async function saveConvForm() {
     const name = document.getElementById("cfName").value.trim();
     const fromUnit = document.getElementById("cfUnit").value.trim();
-    const coeffRaw = document.getElementById("cfCoeff").value.trim();
     const comment = document.getElementById("cfComment").value.trim();
+    const coefficient = effectiveCfCoefficient();
 
-    if (!name || !fromUnit || !coeffRaw) {
-        showStatus(document.getElementById("convFormStatus"), "Заполните ингредиент, единицу рецепта и коэффициент", "error");
+    if (!name || !fromUnit || !coefficient) {
+        const missing = cfInputMode === "batch"
+            ? "Заполните ингредиент, единицу рецепта и обе цифры пачки (кол-во и общий вес/объём)"
+            : "Заполните ингредиент, единицу рецепта и вес/объём одной единицы";
+        showStatus(document.getElementById("convFormStatus"), missing, "error");
         return;
     }
     const ing = ingredientsByName[name];
     if (!ing) {
         showStatus(document.getElementById("convFormStatus"), `Ингредиент «${name}» не найден в Сырье — сначала заведите его там`, "error");
-        return;
-    }
-    const coefficient = Number(coeffRaw.replace(",", "."));
-    if (!coefficient || coefficient <= 0) {
-        showStatus(document.getElementById("convFormStatus"), "Коэффициент должен быть положительным числом", "error");
         return;
     }
 
@@ -456,10 +692,12 @@ function openYieldForm(id) {
     document.getElementById("yfComment").value = record ? (record.comment || "") : "";
     refreshYieldFormula();
     document.getElementById("yieldFormDrawer").classList.remove("hidden");
+    document.documentElement.classList.add("drawer-open");
 }
 
 function closeYieldForm() {
     document.getElementById("yieldFormDrawer").classList.add("hidden");
+    document.documentElement.classList.remove("drawer-open");
 }
 
 function formatQtyForConfirm(qty, unit) {
@@ -622,6 +860,28 @@ function refreshIngredientDatalist() {
         opt.value = name;
         dl.appendChild(opt);
     });
+    refreshCfNameOptions();
+}
+
+// Форма конвертации ссылается строго на существующее сырьё (в отличие от "выхода из сырья",
+// где можно вписать новое) — поэтому выбор сделан как <select>, а не текст с даталистом:
+// нельзя ни опечататься, ни выбрать что-то постороннее, и всегда можно переоткрыть и сменить.
+function refreshCfNameOptions() {
+    const select = document.getElementById("cfName");
+    if (!select) return;
+    const prevValue = select.value;
+    select.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "— выберите сырьё —";
+    select.appendChild(placeholder);
+    Object.keys(ingredientsByName).sort((a, b) => a.localeCompare(b, "ru")).forEach((name) => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+    });
+    if (prevValue && ingredientsByName[prevValue]) select.value = prevValue;
 }
 
 function populateUnitDatalist() {
@@ -636,7 +896,7 @@ function populateUnitDatalist() {
 
 async function loadAll() {
     const [ingRes, convRes, recRes, itemsRes] = await Promise.all([
-        db.from("ingredients").select("id,name,base_unit").order("name"),
+        db.from("ingredients").select("id,name,base_unit,category").order("name"),
         db.from("unit_conversions").select("*"),
         db.from("recipes").select("id,name,is_prep,subtype,yield_qty,yield_unit"),
         db.from("recipe_items").select("id,recipe_id,ingredient_id,sub_recipe_id,qty,unit,is_topup,comment"),
@@ -654,6 +914,17 @@ async function loadAll() {
     recRes.data.forEach((r) => { allRecipesByName[r.name] = r; });
     const itemsByRecipeId = {};
     itemsRes.data.forEach((it) => { (itemsByRecipeId[it.recipe_id] ||= []).push(it); });
+
+    // Единицы, которые реально встречаются в составе рецептов для ингредиента (кроме его
+    // базовой единицы) — форма конвертации предлагает выбрать только из них, а не вписать
+    // руками, чтобы не разойтись опечаткой с тем, что стоит в рецепте.
+    recipeUnitsByIngredient = {};
+    itemsRes.data.forEach((it) => {
+        if (!it.ingredient_id || !it.unit) return;
+        const ing = ingredientsById[it.ingredient_id];
+        if (ing && ing.base_unit && it.unit.toLowerCase() === ing.base_unit.toLowerCase()) return;
+        (recipeUnitsByIngredient[it.ingredient_id] ||= new Set()).add(it.unit);
+    });
 
     // "Простая" заготовка для этого раздела — заготовка с составом ровно из одного сырья
     // (не долив, не вложенная заготовка). Более сложный состав редактируется в "Рецептах".
@@ -694,7 +965,7 @@ function applyQueryPrefill() {
     setModeUI();
     openConvForm(null);
     document.getElementById("cfName").value = ingredient;
-    document.getElementById("cfUnit").value = unit || "";
+    refreshCfUnitOptions(unit || "");
     refreshConvFormula();
 }
 
@@ -752,16 +1023,24 @@ document.getElementById("detailDrawer").onclick = (e) => { if (e.target.id === "
 document.getElementById("convFormCloseBtn").onclick = closeConvForm;
 document.getElementById("convFormDrawer").onclick = (e) => { if (e.target.id === "convFormDrawer") closeConvForm(); };
 document.getElementById("cfSaveBtn").onclick = saveConvForm;
-["cfName", "cfUnit", "cfCoeff"].forEach((id) => document.getElementById(id).addEventListener("input", refreshConvFormula));
+document.getElementById("cfName").addEventListener("change", () => { refreshCfUnitOptions(""); refreshConvFormula(); });
+["cfCoeff", "cfBatchCount", "cfBatchTotal"].forEach((id) => document.getElementById(id).addEventListener("input", refreshConvFormula));
+document.getElementById("cfUnit").addEventListener("change", refreshConvFormula);
 
 document.getElementById("yieldFormCloseBtn").onclick = closeYieldForm;
 document.getElementById("yieldFormDrawer").onclick = (e) => { if (e.target.id === "yieldFormDrawer") closeYieldForm(); };
 document.getElementById("yfSaveBtn").onclick = saveYieldForm;
 ["yfOutputName", "yfRawName", "yfRawQty", "yfRawUnit", "yfYieldQty", "yfYieldUnit"].forEach((id) => document.getElementById(id).addEventListener("input", refreshYieldFormula));
 
-document.getElementById("toolsBtn").onclick = () => document.getElementById("toolsOverlay").classList.remove("hidden");
-document.getElementById("closeToolsBtn").onclick = () => document.getElementById("toolsOverlay").classList.add("hidden");
-document.getElementById("toolsOverlay").onclick = (e) => { if (e.target.id === "toolsOverlay") document.getElementById("toolsOverlay").classList.add("hidden"); };
+document.getElementById("toolsBtn").onclick = () => {
+    document.getElementById("toolsOverlay").classList.remove("hidden");
+    document.documentElement.classList.add("drawer-open");
+};
+document.getElementById("closeToolsBtn").onclick = () => {
+    document.getElementById("toolsOverlay").classList.add("hidden");
+    document.documentElement.classList.remove("drawer-open");
+};
+document.getElementById("toolsOverlay").onclick = (e) => { if (e.target.id === "toolsOverlay") document.getElementById("closeToolsBtn").click(); };
 
 document.getElementById("bulkConvImportBtn").onclick = async () => {
     const text = document.getElementById("bulkConvInput").value.trim();

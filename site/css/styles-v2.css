@@ -326,6 +326,12 @@ button:disabled {
     margin: 0 28px 14px 0;
 }
 
+/* У "Единиц" переключатель конвертации/выхода и поиск стоят впритык друг к другу
+   (нет промежуточного ряда фильтров, как у "Рецептов"/"Сырья") — добавляем зазор. */
+#convSticky .bc-toolbar {
+    margin-top: 10px;
+}
+
 .bc-toolbar .bc-filter {
     flex: 1 1 150px;
     max-width: 220px;
@@ -473,6 +479,7 @@ button:disabled {
 .bc-filter-list {
     min-height: 0;
     overflow: auto;
+    overscroll-behavior: contain;
     padding: 0 8px 8px;
 }
 
@@ -1405,6 +1412,28 @@ html.drawer-open body {
     width: 100%;
 }
 
+.bc-form-footer-split {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.bc-form-footer-split .bc-form-save {
+    flex: 1 1 auto;
+}
+
+.rf-danger-link {
+    flex: 0 0 auto;
+    color: var(--red);
+    border-color: rgba(255, 59, 48, 0.4);
+}
+
+.rf-danger-link:hover {
+    color: #fff;
+    background: var(--red);
+    border-color: var(--red);
+}
+
 .bc-form-tabs {
     grid-template-columns: repeat(2, 1fr);
     margin: 0 0 14px;
@@ -1624,6 +1653,19 @@ html.drawer-open body {
     .bc-form-segmented button {
         font-size: 11px;
         padding: 0 6px;
+    }
+
+    /* "выход из сырья" — три слова, в отличие от однословной "конвертации" —
+       без nowrap переносится на вторую строку и разъезжается с соседней кнопкой. */
+    #modeTabs button {
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 380px) {
+    #modeTabs button {
+        font-size: 10px;
+        padding: 0 4px;
     }
 }
 
@@ -1915,11 +1957,22 @@ html.drawer-open body {
 
 /* ---- Переключатель версии интерфейса ---- */
 
-#versionToggleBtn {
+/* Полноэкранный неинтерактивный слой — единственный position:fixed элемент.
+   Кнопка внутри него — обычный position:absolute, поэтому браузеру не нужно
+   каждый кадр скролла пересчитывать её как самостоятельный fixed-элемент;
+   именно это раньше вызывало заметное "плавание" кнопки на мобильных. */
+#versionToggleFixedLayer {
     position: fixed;
+    inset: 0;
+    z-index: 15;
+    pointer-events: none;
+}
+
+#versionToggleBtn {
+    position: absolute;
     top: 14px;
     right: 14px;
-    z-index: 15;
+    pointer-events: auto;
     width: 40px;
     height: 40px;
     display: inline-flex;
@@ -1946,6 +1999,7 @@ html.drawer-open body {
 #versionToggleBtn.docked {
     position: static;
     flex: 0 0 auto;
+    pointer-events: auto;
 }
 
 /* ---- Всплывающее уведомление (toast) ---- */
@@ -2321,12 +2375,50 @@ th {
     margin-bottom: 8px;
 }
 
+.bc-calc-search-wrap {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 .bc-calc-picker-search {
     min-height: 38px;
     margin-bottom: 0;
     outline: 0;
-    flex: 1 1 auto;
-    min-width: 0;
+    width: 100%;
+    padding-right: 30px;
+}
+
+/* Свой крестик очистки вместо родного — у браузера он не в стиле сайта. */
+.bc-calc-picker-search::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    display: none;
+}
+
+.bc-calc-search-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 22px;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1;
+}
+
+.bc-calc-search-clear:hover {
+    background: rgba(255, 103, 43, 0.18);
+    color: var(--orange);
+}
+
+.bc-calc-search-clear.hidden {
+    display: none;
 }
 
 .bc-calc-picker-close {
@@ -2377,6 +2469,7 @@ th {
     gap: 4px;
     max-height: 270px;
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding-right: 12px;
     scrollbar-gutter: stable;
 }
@@ -2403,6 +2496,22 @@ th {
     border-color: var(--orange);
     color: var(--orange);
     background: rgba(255, 103, 43, 0.08);
+}
+
+.bc-calc-picker-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.bc-calc-picker-toggle input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    accent-color: var(--orange);
 }
 
 
@@ -2437,6 +2546,20 @@ th {
 .bc-calc-picker-option:hover {
     border-color: rgba(255, 103, 43, 0.65);
     background: rgba(255, 103, 43, 0.08);
+}
+
+.bc-calc-picker-option.is-chosen {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.bc-calc-picker-option.is-chosen:hover {
+    border-color: transparent;
+    background: transparent;
+}
+
+.bc-calc-picker-option.is-chosen small {
+    color: var(--orange);
 }
 
 .bc-calc-picker-empty {
@@ -2683,12 +2806,37 @@ th {
     cursor: pointer;
 }
 
+.bc-calc-yield-warn {
+    display: inline-flex;
+    vertical-align: middle;
+    width: 14px;
+    height: 14px;
+    margin-left: 6px;
+    color: var(--orange);
+}
+
+.bc-calc-yield-warn svg {
+    width: 100%;
+    height: 100%;
+}
+
 .bc-calc-tree-note {
     padding: 6px 0 6px calc(var(--level) * 22px + 20px);
     border-bottom: 1px solid var(--line-soft);
     color: var(--muted-2);
     font-size: 11px;
     font-style: italic;
+}
+
+.bc-calc-tree-note-link {
+    color: var(--orange);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-style: normal;
+}
+
+.bc-calc-tree-note-link:hover {
+    color: var(--text);
 }
 
 .bc-calc-row.is-topup .bc-calc-share {
@@ -2713,11 +2861,19 @@ th {
     white-space: nowrap;
 }
 
-.bc-calc-share {
-    display: block;
+.bc-calc-share-cell {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
     width: 184px;
     max-width: 100%;
-    height: 8px;
+}
+
+.bc-calc-share {
+    display: block;
+    width: 100%;
+    height: 10px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.06);
     overflow: hidden;
@@ -2728,6 +2884,45 @@ th {
     height: 100%;
     border-radius: inherit;
     background: var(--orange);
+}
+
+/* Капельки для миллилитров, кубики для граммов — грамм на этой шкале приравнен
+   к миллилитру (см. shareBasis в calculator-v2.js), меняется только узор заливки. */
+.bc-calc-share.kind-ml i {
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23ff672b' d='M8 1.5c1.6 2.6 4.5 6.7 4.5 9.3a4.5 4.5 0 0 1-9 0C3.5 8.2 6.4 4.1 8 1.5Z'/%3E%3C/svg%3E");
+    background-repeat: repeat-x;
+    background-position: center;
+    background-size: 13px 10px;
+}
+
+.bc-calc-share.kind-g i {
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2.5' y='2.5' width='11' height='11' rx='1.5' fill='%23ff672b'/%3E%3Cpath d='M2.5 6h11M6 2.5v11' stroke='rgba(9,8,7,.35)' stroke-width='1'/%3E%3C/svg%3E");
+    background-repeat: repeat-x;
+    background-position: center;
+    background-size: 13px 10px;
+}
+
+.bc-calc-share.kind-unknown {
+    background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 5px, rgba(255, 255, 255, 0.11) 5px 10px);
+}
+
+.bc-calc-share.kind-unknown i {
+    display: none;
+}
+
+.bc-calc-share-link {
+    align-self: flex-end;
+    color: var(--muted-2);
+    font-size: 10px;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    white-space: nowrap;
+}
+
+.bc-calc-share-link:hover {
+    color: var(--orange);
 }
 
 .bc-calc-empty {
@@ -3162,6 +3357,15 @@ th {
     border-color: rgba(255, 59, 48, 0.4);
 }
 
+/* .bc-drawer-actions button {color: var(--text)} весит больше, чем один класс
+   .ing-danger, и перебивает его — из-за этого кнопка удаления в мобильном drawer
+   (единственное место, где вообще виден #drawerDeleteBtn) красилась в обычный
+   цвет вместо красного. */
+.bc-drawer-actions .ing-danger {
+    color: var(--red);
+    border-color: rgba(255, 59, 48, 0.4);
+}
+
 .ing-title-row {
     display: flex;
     align-items: flex-start;
@@ -3222,6 +3426,72 @@ th {
     color: var(--text);
     font-weight: 500;
     text-align: right;
+}
+
+.ing-summary {
+    padding: 6px 2px;
+}
+
+.ing-summary h2 {
+    margin: 0 0 14px;
+}
+
+.ing-summary-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.ing-summary-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.ing-summary-stat b {
+    font-size: 22px;
+    font-family: "Unbounded", sans-serif;
+    color: var(--orange);
+}
+
+.ing-summary-stat span {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.ing-summary-hint {
+    margin: 0 0 14px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.ing-summary-subtitle {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+
+.ing-summary-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.ing-summary-chip {
+    padding: 5px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--muted-2);
 }
 
 /* Комментарий и другие длинные значения в bc-meta — не прижимаем к правому краю
@@ -3344,6 +3614,28 @@ th {
     line-height: 1;
 }
 
+.ing-usage-row {
+    text-decoration: none;
+    gap: 4px;
+    padding: 12px 14px;
+}
+
+.ing-usage-row:hover {
+    border-color: var(--orange);
+}
+
+.ing-usage-name {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.ing-usage-meta {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
 .bc-v2-card h4 {
     margin: 0 0 8px;
     font-family: "Unbounded", sans-serif;
@@ -3387,7 +3679,8 @@ th {
 @media (max-width: 1080px) {
     #toolsOverlay .bc-drawer-panel,
     #ingredientFormDrawer .bc-drawer-panel,
-    #detailDrawer .bc-drawer-panel {
+    #detailDrawer .bc-drawer-panel,
+    #recipeUsageDrawer .bc-drawer-panel {
         width: 100%;
     }
 }

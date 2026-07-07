@@ -41,7 +41,7 @@
             </a>
         </nav>
     </aside>
-    <main class="bc-window bc-window-single">
+    <main class="bc-window">
         <section class="bc-list-pane bc-v2-content">
             <header class="bc-header">
                 <div><div class="bc-kicker">BARCALC.OS / EVENTS</div><h1>События</h1></div>
@@ -50,6 +50,12 @@
             <div id="status" class="status bc-status"></div>
             <div id="eventGrid"></div>
         </section>
+
+        <aside class="bc-detail-pane ev-side">
+            <div class="bc-kicker">BARCALC.OS / ПОСЛЕДНЕЕ СОБЫТИЕ</div>
+            <div id="latestEventSummary"></div>
+        </aside>
+
         <div class="bc-marquee" aria-hidden="true">
             <div class="bc-marquee-track">
                 <span>FUCK EXCEL</span>
@@ -92,9 +98,22 @@
     </div>
 </div>
 
+<div id="deleteConfirmOverlay" class="overlay hidden">
+    <div class="overlay-panel">
+        <div class="overlay-actions"><button class="overlay-close" id="deleteConfirmCloseBtn">Закрыть</button></div>
+        <h3 class="bc-form-title">Удалить мероприятие?</h3>
+        <p id="deleteConfirmMessage" class="ev-list-confirm-text"></p>
+        <div class="ev-list-confirm-actions">
+            <button type="button" class="bc-button-link" id="deleteConfirmCancelBtn">Нет</button>
+            <button type="button" class="bc-primary-link ev-danger-link" id="deleteConfirmOkBtn">Да, удалить</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
-<script src="js/version-toggle.js"></script>
+<script src="js/version-toggle.js?v=2"></script>
+<script src="js/format.js"></script>
 <script src="js/events-v2.js"></script>
 <script>
 if ('serviceWorker' in navigator) {

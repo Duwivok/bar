@@ -45,8 +45,13 @@ function createCheckButton(checked, disabled, onToggle) {
 }
 
 // Кастомный тумблер (переиспользует .ev-switch/.ev-switch-slider из event-v2.css).
+// Обёртка ОБЯЗАНА быть <label>, а не <span>: сам чекбокс в CSS сделан невидимым
+// и нулевого размера (0x0, opacity:0) — кликабельность видимого слайдера целиком
+// держится на нативной привязке "клик по label -> toggle вложенного input", которую
+// span не даёт. Из-за span тумблер выглядел рабочим только в тестах с принудительным
+// (force) кликом прямо по input, а реальный клик мышью по слайдеру ничего не делал.
 function createSwitch(checked, onToggle) {
-    const label = document.createElement("span");
+    const label = document.createElement("label");
     label.className = "ev-switch";
     const input = document.createElement("input");
     input.type = "checkbox";
@@ -374,6 +379,15 @@ eventEditEls.closeBtn.onclick = closeEventEdit;
 eventEditEls.saveBtn.onclick = saveEventEdit;
 eventEditEls.overlay.addEventListener("click", (e) => { if (e.target === eventEditEls.overlay) closeEventEdit(); });
 
+document.getElementById("eventDeleteBtn").onclick = () => {
+    openConfirm(`Вы действительно хотите удалить мероприятие «${eventRow.name}»? Это действие необратимо — вместе с ним удалятся меню, заготовки и закупки.`, async () => {
+        closeEventEdit();
+        const { error } = await db.from("events").delete().eq("id", eventId);
+        if (error) { showToast("Не получилось удалить: " + error.message, "error"); return; }
+        window.location.href = "events-v2.html";
+    });
+};
+
 // ---- "Где используется" — клик по позиции в "Закупке" ----
 
 const sourcesEls = {
@@ -581,8 +595,73 @@ function renderSummary() {
     });
 }
 
+// ---- Боковая сводка на десктопе (bc-detail-pane): закупки/заготовки/проблемы,
+// чтобы не переключать вкладки ради общей картины — актуальна только на широком экране,
+// но считается всегда (дёшево — переиспользует уже посчитанные totals). ----
+
+function renderSidebar() {
+    const { ingredientTotals, prepTotals } = eventTotalsSafe();
+    const { totalCost, lines } = computeBudget(ingredientTotals, ingredientsByName, packagesByIngredientId);
+    const manualCost = manualItems.reduce((sum, m) => sum + (m.cost || 0), 0);
+    const manualLines = manualItems.map((m) => ({ isManual: true, manualId: m.id, is_checked: m.is_checked }));
+    const allLines = [...lines, ...manualLines];
+
+    const shoppingEl = document.getElementById("evSideShopping");
+    shoppingEl.innerHTML = "";
+    if (allLines.length === 0) {
+        addText(shoppingEl, "div", "bc-empty ev-side-empty", "Соберите меню — здесь появится список закупок.");
+    } else {
+        const checkedCount = allLines.filter((l) => isShoppingEntryChecked(l)).length;
+        const total = totalCost + manualCost;
+        addProgressRow(shoppingEl, checkedCount, allLines.length, "позиций куплено");
+        const cost = document.createElement("div");
+        cost.className = "ev-side-cost" + (eventRow.plan_budget && total > eventRow.plan_budget ? " over" : "");
+        cost.textContent = eventRow.plan_budget ? `${formatMoney(total)} из бюджета ${formatMoney(eventRow.plan_budget)}` : formatMoney(total);
+        shoppingEl.appendChild(cost);
+    }
+
+    const prepsEl = document.getElementById("evSidePreps");
+    prepsEl.innerHTML = "";
+    if (prepTotals.length === 0) {
+        addText(prepsEl, "div", "bc-empty ev-side-empty", "В меню нет заготовок.");
+    } else {
+        const checkedCount = prepTotals.filter((p) => prepStateMap[p.recipeId] && prepStateMap[p.recipeId].is_checked).length;
+        addProgressRow(prepsEl, checkedCount, prepTotals.length, "заготовок готово");
+    }
+
+    const issuesEl = document.getElementById("evSideIssues");
+    issuesEl.innerHTML = "";
+    const issues = computeIssues();
+    if (issues.length === 0) {
+        addText(issuesEl, "div", "bc-empty ev-side-empty", menuItems.length === 0 ? "Сначала соберите меню." : "Проблем не найдено.");
+    } else {
+        issues.slice(0, 4).forEach((issue) => addText(issuesEl, "div", "ev-side-issue", issue.text));
+        if (issues.length > 4) addText(issuesEl, "div", "ev-side-more", `и ещё ${issues.length - 4}…`);
+    }
+}
+
+function addProgressRow(container, done, total, label) {
+    const row = document.createElement("div");
+    row.className = "ev-side-progress";
+    const bar = document.createElement("div");
+    bar.className = "ev-side-progress-bar";
+    const fill = document.createElement("i");
+    fill.style.width = `${total > 0 ? Math.round((done / total) * 100) : 0}%`;
+    bar.appendChild(fill);
+    const text = document.createElement("span");
+    text.textContent = `${done} из ${total} ${label}`;
+    row.appendChild(bar);
+    row.appendChild(text);
+    container.appendChild(row);
+}
+
+document.querySelectorAll("[data-goto-tab]").forEach((btn) => {
+    btn.onclick = () => selectTab(btn.dataset.gotoTab);
+});
+
 function refreshAfterChange() {
     renderSummary();
+    renderSidebar();
     renderActiveTab();
 }
 
@@ -598,13 +677,19 @@ function pickerSearchText(recipe) {
 function pickerVisibleRecipes() {
     const needle = normalized(pickerSearch);
     const chosenIds = new Set(menuItems.map((m) => m.recipe_id));
+    // Уже добавленные в меню рецепты раньше полностью скрывались из пикера — если
+    // пользователь искал по имени уже добавленный рецепт, казалось, что "ничего не
+    // найдено" и ввод не работает. Теперь они остаются в списке (в конце, с пометкой
+    // "уже в меню"), чтобы поиск точным названием давал понятный результат.
     return Object.values(recipesById)
-        .filter((r) => !chosenIds.has(r.id))
         .filter((r) => !r.is_prep || GUEST_SERVABLE_PREP_SUBTYPES.includes(r.subtype))
         .filter((r) => !needle || pickerSearchText(r).includes(needle))
         .filter((r) => pickerFilter === "all" || recipeBucket(r) === pickerFilter)
         .filter((r) => pickerSpirit === "all" || normalized(r.main_spirit) === pickerSpirit)
         .sort((a, b) => {
+            const chosenA = chosenIds.has(a.id);
+            const chosenB = chosenIds.has(b.id);
+            if (chosenA !== chosenB) return chosenA ? 1 : -1;
             if (pickerSort === "kind") {
                 const c = recipeKind(a).localeCompare(recipeKind(b), "ru");
                 if (c) return c;
@@ -654,7 +739,12 @@ function renderPickerControls() {
 function renderPicker() {
     renderPickerControls();
     els.recipePickerList.innerHTML = "";
+    // Сброс скролла списка при любом изменении поиска/фильтра/сортировки — иначе
+    // список выглядит "неизменным": он честно перестроился, но раз пользователь
+    // до этого проскроллил его вниз, наверху остаются те же по счёту строки.
+    els.recipePickerList.scrollTop = 0;
     const visible = pickerVisibleRecipes();
+    const chosenIds = new Set(menuItems.map((m) => m.recipe_id));
     if (visible.length === 0) {
         const empty = document.createElement("div");
         empty.className = "bc-calc-picker-empty";
@@ -663,17 +753,23 @@ function renderPicker() {
         return;
     }
     visible.forEach((recipe) => {
+        const isChosen = chosenIds.has(recipe.id);
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "bc-calc-picker-option";
+        btn.className = "bc-calc-picker-option" + (isChosen ? " is-chosen" : "");
         btn.setAttribute("role", "option");
         const name = document.createElement("span");
         name.textContent = recipe.name;
         const kind = document.createElement("small");
-        kind.textContent = recipeKind(recipe);
+        kind.textContent = isChosen ? "уже в меню" : recipeKind(recipe);
         btn.appendChild(name);
         btn.appendChild(kind);
-        btn.onclick = () => { addMenuItem(recipe.id); closePicker(); };
+        if (isChosen) {
+            btn.disabled = true;
+            btn.title = "Уже добавлено в меню";
+        } else {
+            btn.onclick = () => { addMenuItem(recipe.id); closePicker(); };
+        }
         els.recipePickerList.appendChild(btn);
     });
 }
@@ -1090,8 +1186,40 @@ document.getElementById("addManualItemBtn").onclick = async () => {
     if (error) { showToast("Не сохранилось: " + error.message, "error"); return; }
     manualItems.push(data);
     nameInput.value = ""; qtyInput.value = ""; unitInput.value = ""; categoryInput.value = ""; costInput.value = "";
+    document.getElementById("manualItemModalOverlay").classList.add("hidden");
     refreshAfterChange();
 };
+
+// Компактный блок "+ добавить вручную": на десктопе живёт одной строкой прямо в
+// "Закупке", на мобильном (где пятью полями в ряд не поместиться) тот же самый DOM-узел
+// с полями переезжает в модалку-карточку по клику на кнопку — приём как в
+// setupAddPickerPlacement (переносим один и тот же элемент между двумя местами разметки).
+function setupManualFormPlacement() {
+    const host = document.getElementById("manualFormHost");
+    const inlineParent = document.querySelector('.ev-tab[data-tab="shopping"]');
+    const inlineAnchor = document.getElementById("evShoppingList");
+    const modalOverlay = document.getElementById("manualItemModalOverlay");
+    const modalSlot = document.getElementById("manualItemModalSlot");
+    const openBtn = document.getElementById("manualMobileOpenBtn");
+    const mq = window.matchMedia("(max-width: 1080px)");
+
+    const place = () => {
+        if (mq.matches) {
+            if (host.parentElement !== modalSlot) modalSlot.appendChild(host);
+            openBtn.classList.remove("hidden");
+        } else {
+            if (host.parentElement !== inlineParent) inlineParent.insertBefore(host, inlineAnchor);
+            modalOverlay.classList.add("hidden");
+            openBtn.classList.add("hidden");
+        }
+    };
+    place();
+    mq.addEventListener("change", place);
+
+    openBtn.onclick = () => modalOverlay.classList.remove("hidden");
+    document.getElementById("manualItemModalCloseBtn").onclick = () => modalOverlay.classList.add("hidden");
+    modalOverlay.addEventListener("click", (e) => { if (e.target === modalOverlay) modalOverlay.classList.add("hidden"); });
+}
 
 function isShoppingEntryChecked(entry) {
     if (entry.isManual) return !!entry.is_checked;
@@ -1112,8 +1240,22 @@ function formatPackageCombo(combo) {
 
 let collapsedShoppingCategories = new Set();
 
+function shoppingEntryKey(entry) {
+    if (entry.isManual) return "manual:" + entry.manualId;
+    if (entry.isBoughtPrep) return "prep:" + entry.recipeId;
+    return "ing:" + entry.name;
+}
+
 function renderShopping() {
     const listEl = document.getElementById("evShoppingList");
+
+    // FLIP (см. renderPreps) — чтобы галочка "куплено"/"снята" плавно переезжала
+    // позицию вниз/вверх, а не перескакивала мгновенно, в обе стороны.
+    const prevRects = new Map();
+    listEl.querySelectorAll(".ev-shopping-item[data-key]").forEach((item) => {
+        prevRects.set(item.dataset.key, item.getBoundingClientRect());
+    });
+
     listEl.innerHTML = "";
 
     const { ingredientTotals } = eventTotalsSafe();
@@ -1186,6 +1328,7 @@ function renderShopping() {
             // названием и строкой "Купить: ...", а не между разными позициями.
             const item = document.createElement("div");
             item.className = "ev-shopping-item";
+            item.dataset.key = shoppingEntryKey(entry);
 
             if (entry.isManual) {
                 const checked = !!entry.is_checked;
@@ -1284,6 +1427,24 @@ function renderShopping() {
     const budget = document.getElementById("evBudgetTotal");
     budget.className = "ev-budget-total" + (eventRow.plan_budget && totalCost > eventRow.plan_budget ? " over" : "");
     budget.textContent = `Итого по закупке: ${formatMoney(totalCost)}` + (eventRow.plan_budget ? ` из бюджета ${formatMoney(eventRow.plan_budget)}` : "");
+
+    if (prevRects.size > 0) {
+        requestAnimationFrame(() => {
+            listEl.querySelectorAll(".ev-shopping-item[data-key]").forEach((item) => {
+                const prev = prevRects.get(item.dataset.key);
+                if (!prev) return;
+                const next = item.getBoundingClientRect();
+                const dy = prev.top - next.top;
+                if (!dy) return;
+                item.style.transition = "none";
+                item.style.transform = `translateY(${dy}px)`;
+                requestAnimationFrame(() => {
+                    item.style.transition = "";
+                    item.style.transform = "";
+                });
+            });
+        });
+    }
 }
 
 function buildShoppingMarkdown() {
@@ -1650,14 +1811,24 @@ function setupStickyTabs() {
     const workspaceEl = document.querySelector(".bc-v2-content");
     if (!stickyEl || !workspaceEl) return;
 
+    // rAF-throttling + гистерезис (разные пороги входа/выхода) убирают дёрганье
+    // от частых scroll-событий и переключения класса туда-обратно на границе.
+    let compactRaf = null;
+    let isCompact = false;
     const updateCompact = () => {
+        compactRaf = null;
         const scrolled = Math.max(workspaceEl.scrollTop, window.scrollY || document.documentElement.scrollTop || 0);
-        stickyEl.classList.toggle("compact", scrolled > 24);
+        if (!isCompact && scrolled > 40) isCompact = true;
+        else if (isCompact && scrolled < 16) isCompact = false;
+        stickyEl.classList.toggle("compact", isCompact);
         // Ширина/паддинг кнопок меняются в компакт-режиме — скользящий "thumb" нужно пересчитать.
         setTabThumb();
     };
-    workspaceEl.addEventListener("scroll", updateCompact);
-    window.addEventListener("scroll", updateCompact);
+    const scheduleUpdateCompact = () => {
+        if (compactRaf === null) compactRaf = requestAnimationFrame(updateCompact);
+    };
+    workspaceEl.addEventListener("scroll", scheduleUpdateCompact, { passive: true });
+    window.addEventListener("scroll", scheduleUpdateCompact, { passive: true });
 }
 
 // ---- Кнопка "+ добавить рецепт": на мобильном живёт внутри вкладки "Меню", а не в шапке ----
@@ -1681,18 +1852,34 @@ function setupAddPickerPlacement() {
 
 // ---- Инициализация ----
 
+// Глазик переключения версии — на этой странице живёт не в углу экрана (там он
+// перекрывал прилипающую полоску вкладок при скролле), а рядом с карандашиком
+// редактирования, внутри заголовка. position:sticky (а не fixed) держит его на месте
+// при скролле — и на мобильном, и на десктопе — но при этом он остаётся частью потока
+// разметки рядом с названием, а не наложен поверх контента.
+function setupInlineVersionToggle() {
+    const btn = document.getElementById("versionToggleBtn");
+    const titleRow = document.querySelector(".ev-title-row");
+    if (!btn || !titleRow) return;
+    titleRow.appendChild(btn);
+    btn.classList.add("ev-inline-toggle");
+}
+
 async function init() {
     if (!isDbConfigured()) { showStatus(statusEl, "База данных не подключена", "error"); return; }
     if (!eventId) { showStatus(statusEl, "Не указано мероприятие", "error"); return; }
     populateManualItemDatalists();
+    setupInlineVersionToggle();
     setupTabs();
     setupStickyTabs();
     setupAddPickerPlacement();
+    setupManualFormPlacement();
     setupMenuToolbar();
     const ok = await loadAll();
     if (!ok) return;
     renderHeader();
     renderSummary();
+    renderSidebar();
     renderMenu();
 }
 
